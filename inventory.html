@@ -29,9 +29,28 @@
       <div class="chips" id="dchips"></div>
       <div class="two" style="padding:0 16px 10px"><label class="fld"><small>From</small><input type="date" id="df"></label><label class="fld"><small>To</small><input type="date" id="dt"></label></div>
       <div class="stats" id="dstats"></div>
+      <div class="bar"><button class="btn g" onclick="approveAll()">Approve all pending</button><button class="btn" onclick="exportCsv()">Export CSV</button></div>
       <div class="cols">
         <div><div class="sec">Hours per person</div><div class="card" id="dsum"></div></div>
         <div><div class="sec">Shift log</div><div id="dlist"></div></div>
+      </div>
+    </section>
+
+    <section class="page" id="p-rota">
+      <div class="sec">Weekly rota</div>
+      <div style="display:flex;gap:8px;padding:0 16px 10px;align-items:center"><button class="btn" onclick="wk(-1)" aria-label="Previous week">‹</button><div class="grow nm" id="wlab" style="text-align:center"></div><button class="btn" onclick="wk(1)" aria-label="Next week">›</button></div>
+      <div class="bar" id="rbar"><button class="btn" onclick="copyWeek()">Copy previous week</button></div>
+      <div class="card" style="overflow-x:auto" id="rtab"></div>
+      <div class="note" id="rnote"></div>
+    </section>
+
+    <section class="page" id="p-haccp">
+      <div class="sec">Fridge temperature checks</div>
+      <div class="two" style="padding:0 16px 10px"><label class="fld"><small>Date</small><input type="date" id="hd"></label></div>
+      <div class="stats" id="hstats"></div>
+      <div class="cols">
+        <div><div class="sec">Readings</div><div id="hgrid"></div></div>
+        <div><div class="sec" style="display:flex;justify-content:space-between;align-items:center;padding-right:16px">Fridges &amp; freezers <button class="sm a" onclick="fridgeForm()">+ Add fridge</button></div><div class="card" id="hfr"></div></div>
       </div>
     </section>
 
@@ -59,7 +78,7 @@
       <div class="cols">
         <div><div class="sec">Order list</div><div class="note">Items at or below minimum stock, sized from weekly usage.</div>
           <div class="card" id="orderlist"></div>
-          <div class="bar"><button class="btn p" onclick="sendOrder()">Send order via WhatsApp</button></div></div>
+          <div class="bar"><button class="btn p" onclick="sendOrder()">Send order via WhatsApp</button><button class="btn" onclick="OWW.go('p-del')">Confirm delivery →</button></div></div>
         <div><div class="sec">Staff alerts <span class="tag r" id="ac">0</span></div>
           <div class="note">Only managers can mark ordered or dismiss. Resets when you confirm Friday’s delivery.</div>
           <div id="alerts"></div></div>
@@ -86,15 +105,17 @@
 
   <nav id="nav">
     <button class="nb on" data-p="p-dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Dashboard</button>
+    <button class="nb" data-p="p-rota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Rota</button>
+    <button class="nb" data-p="p-haccp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>HACCP<span class="bdg hide" id="hb"></span></button>
     <button class="nb" data-p="p-stock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Stock</button>
     <button class="nb" data-p="p-order"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>Order<span class="bdg hide" id="ob"></span></button>
-    <button class="nb" data-p="p-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Delivery</button>
     <button class="nb" data-p="p-set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>Settings</button>
   </nav>
 </div>
 
 <div id="sheet"><div id="sheetc"></div></div>
 <script src="oww.js"></script>
+<script src="i18n.js"></script>
 <script>
 const $ = OWW.$, esc = OWW.esc;
 let D = { inv: [], order: [], alerts: [], users: [] }, filt = 'ALL', del = {};
@@ -102,7 +123,7 @@ document.querySelectorAll('.nb').forEach(b => b.onclick = () => OWW.go(b.dataset
 
 OWW.start({
   title: 'OWW Admin', sub: 'Managers & directors only', allow: ['Kitchen Manager', 'Director'],
-  ready(u) { $('sub').textContent = u.name + ' · ' + u.role; OWW.account('acct'); $('dir').classList.toggle('hide', u.role !== 'Director'); load(); setP('week'); loadEvents(); }
+  ready(u) { $('sub').textContent = u.name + ' · ' + u.role; OWW.account('acct'); $('dir').classList.toggle('hide', u.role !== 'Director'); load(); setP('week'); loadEvents(); loadH(); }
 });
 
 async function load(manual) {
@@ -117,7 +138,7 @@ const rel = d => { const n = Math.round((new Date(d + 'T12:00') - new Date(OWW.y
 async function loadEvents() { try { EV = await OWW.api('eventList'); } catch (e) { return OWW.toast(e.message, 'red'); } renderEvents(); }
 function renderEvents() {
   $('evlist').innerHTML = '<div class="card">' + (EV.length ? EV.map(e => { const d = new Date(e.date + 'T12:00');
-    return `<div class="row"><div style="min-width:46px;text-align:center"><div style="font-weight:700;font-size:20px;line-height:1">${d.getDate()}</div><div class="sub">${d.toLocaleDateString('en-GB', { month: 'short' })}</div></div>
+    return `<div class="row"><div style="min-width:46px;text-align:center"><div style="font-weight:700;font-size:20px;line-height:1">${d.getDate()}</div><div class="sub">${d.toLocaleDateString(OWW.loc(), { month: 'short' })}</div></div>
       <div class="grow"><div class="nm">${esc(e.title)}</div><div class="sub">${rel(e.date)}${e.time ? ' · ' + esc(e.time) : ''}${e.notes ? ' · ' + esc(e.notes) : ''}</div></div>
       ${e.pending ? '<span class="tag a">saving</span>' : `<button class="sm" aria-label="Delete event" onclick="delEvent('${esc(e.id)}')">✕</button>`}</div>`; }).join('')
     : '<div class="empty">No upcoming events. Tap “Add event”.</div>') + '</div>';
@@ -142,7 +163,7 @@ async function delEvent(id) {
 }
 async function refresh() {
   const b = $('rf'); b.disabled = true; b.textContent = 'Updating…';
-  await Promise.all([load(), loadDash(), loadEvents()]); b.disabled = false; b.textContent = '↻ Refresh'; OWW.toast('Updated');
+  await Promise.all([load(), loadDash(), loadEvents(), loadH()]); b.disabled = false; b.textContent = '↻ Refresh'; OWW.toast('Updated');
 }
 
 // ── attendance dashboard ──
@@ -159,13 +180,13 @@ $('dchips').onclick = e => { const b = e.target.closest('[data-p]'); if (b) setP
 async function loadDash() { try { S = await OWW.api('shiftAll', { from: $('df').value, to: $('dt').value }); } catch (e) { return OWW.toast(e.message, 'red'); } renderDash(); }
 function renderDash() {
   $('dchips').innerHTML = [['today', 'Today'], ['week', 'This week'], ['month', 'This month'], ['custom', 'Custom']].map(c => `<button class="chip ${P === c[0] ? 'on' : ''}" data-p="${c[0]}">${c[1]}</button>`).join('');
-  const per = {}; S.forEach(x => { const p = per[x.uid] = per[x.uid] || { name: x.name, role: x.role, n: 0, h: 0 }; p.n++; p.h += x.hours; });
+  const per = {}; S.forEach(x => { const p = per[x.uid] = per[x.uid] || { name: x.name, role: x.role, n: 0, h: 0, ap: 0 }; p.n++; p.h += x.hours; if (x.status === 'APPROVED') p.ap += x.hours; });
   const ppl = Object.values(per).sort((a, b) => b.h - a.h), tot = S.reduce((s, x) => s + x.hours, 0);
   $('dstats').innerHTML = [['Total hours', OWW.hrs(tot)], ['Shifts', S.length], ['Staff', ppl.length]].map(x => `<div class="stat"><small>${x[0]}</small><b style="font-size:22px">${x[1]}</b></div>`).join('');
-  $('dsum').innerHTML = ppl.length ? ppl.map(p => `<div class="row"><div class="grow"><div class="nm">${esc(p.name)}</div><div class="sub">${esc(p.role)} · ${p.n} shift${p.n > 1 ? 's' : ''}</div></div><b>${OWW.hrs(p.h)}</b></div>`).join('') : '<div class="empty">No shifts in this period</div>';
+  $('dsum').innerHTML = ppl.length ? ppl.map(p => `<div class="row"><div class="grow"><div class="nm">${esc(p.name)}</div><div class="sub">${esc(p.role)} · ${p.n} shift${p.n > 1 ? 's' : ''}</div></div><div style="text-align:right"><b>${OWW.hrs(p.h)}</b><div class="sub">${OWW.hrs(p.ap)} approved</div></div></div>`).join('') : '<div class="empty">No shifts in this period</div>';
   const g = {}; S.forEach(x => (g[x.date] = g[x.date] || []).push(x));
   $('dlist').innerHTML = Object.keys(g).length ? Object.keys(g).map(d => `<div class="sec" style="padding-top:0">${OWW.day(d)}</div><div class="card">` + g[d].map(x =>
-    `<div class="row"><span class="tag b">${OWW.kind(x.start)}</span><div class="grow"><div class="nm">${esc(x.name)}</div><div class="sub">${esc(x.start)} → ${esc(x.end)}${x.memo ? ' · ' + esc(x.memo) : ''}</div></div><b>${OWW.hrs(x.hours)}</b><button class="sm" aria-label="Delete shift" onclick="delShift('${esc(x.id)}')">✕</button></div>`).join('') + '</div>').join('')
+    `<div class="row"><span class="tag b">${OWW.kind(x.start)}</span><div class="grow"><div class="nm">${esc(x.name)}</div><div class="sub">${esc(x.start)} → ${esc(x.end)}${x.memo ? ' · ' + esc(x.memo) : ''}</div></div>${stTag(x)}<b>${OWW.hrs(x.hours)}</b>${apBtn(x)}<button class="sm" aria-label="Delete shift" onclick="delShift('${esc(x.id)}')">✕</button></div>`).join('') + '</div>').join('')
     : '<div class="empty">No shifts in this period</div>';
 }
 async function delShift(id) { if (!confirm('Delete this shift record?')) return; try { await OWW.api('shiftDelete', { id }); await loadDash(); } catch (e) { OWW.toast(e.message, 'red'); } }
@@ -353,5 +374,6 @@ function dlSheet() {
   a.href = URL.createObjectURL(new Blob(['\ufeff' + t], { type: 'text/csv' })); a.download = 'oww-count-sheet.csv'; a.click();
 }
 </script>
+<script src="admin-x.js"></script>
 </body>
 </html>

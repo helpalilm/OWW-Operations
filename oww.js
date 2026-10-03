@@ -56,7 +56,7 @@ OWW.logout = () => { localStorage.removeItem('oww_s'); location.reload(); };
 // cfg: { title, sub, allow:[roles], ready(user) }
 OWW.start = cfg => {
   const L = OWW.$('login');
-  L.innerHTML = `<form id="lf" novalidate><img src="logo.png" alt="Old Wild West" style="width:124px;height:124px;margin:0 auto 2px"><h1>${cfg.title}</h1><p>${cfg.sub}</p>
+  L.innerHTML = `<form id="lf" novalidate><img src="logo.png" alt="Old Wild West" style="width:124px;height:124px;margin:0 auto 2px"><h1>${cfg.title}</h1><p>${cfg.sub}</p><div style="text-align:center">${OWW.langBar ? OWW.langBar() : ''}</div>
     <input id="em" type="email" placeholder="Email" autocomplete="username" autocapitalize="none" required>
     <input id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
     <div class="err" id="le" role="alert"></div><button class="btn p w" id="lb">Sign in</button></form>`;
@@ -75,7 +75,8 @@ OWW.start = cfg => {
   };
   // restore a still-valid session (12h) so people are not asked every time
   const s = JSON.parse(localStorage.getItem('oww_s') || 'null');
-  if (s) { OWW.tk = s.tk; try { enter(s.tk, s.user); OWW.api('me').catch(() => {}); } catch (x) { OWW.logout(); } } // opens instantly; an expired session returns to login
+  if (s) { OWW.tk = s.tk; const go = () => { try { enter(s.tk, s.user); OWW.api('me').catch(() => {}); } catch (x) { OWW.logout(); } }; // runs after the whole page has loaded
+    document.readyState === 'loading' ? addEventListener('DOMContentLoaded', go) : go(); } // opens instantly; an expired session returns to login
 };
 
 // settings card: who you are, change password, sign out
@@ -87,6 +88,7 @@ OWW.account = el => {
       <input id="pc" type="password" placeholder="Current password" autocomplete="current-password">
       <input id="pn" type="password" placeholder="New password (8+ characters)" autocomplete="new-password">
       <button class="btn p" onclick="OWW.changePw()">Save password</button></div>
+    <div class="row"><span class="grow">Language / Lingua</span>${OWW.langBar ? OWW.langBar() : ''}</div>
     <div class="row"><button class="btn w" onclick="OWW.logout()" style="color:var(--red)">Sign out</button></div></div></div>`;
 };
 OWW.changePw = async () => {
@@ -97,7 +99,7 @@ OWW.changePw = async () => {
 OWW.ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 OWW.hrs = h => { const m = Math.round(h * 60); return Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0') + 'm'; };
 OWW.kind = s => { const h = parseInt(s, 10); return h >= 6 && h < 12 ? 'Morning' : h >= 12 && h < 17 ? 'Lunch' : 'Dinner'; };
-OWW.day = s => new Date(s + 'T12:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+OWW.day = s => new Date(s + 'T12:00').toLocaleDateString(OWW.loc(), { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 OWW.shiftNow = () => new Date().getHours() < 15 ? 'Day' : 'Night';
 OWW.ico = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
 

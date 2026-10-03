@@ -18,11 +18,13 @@
 <div id="app" class="hide">
   <header id="top">
     <div class="brand"><img src="logo.png" alt=""><div><b>Admin</b><small id="sub"></small></div></div>
-    <button class="sm" onclick="load(true)">Refresh</button>
+    <button class="sm" id="rf" onclick="refresh()">↻ Refresh</button>
   </header>
 
   <main id="main">
     <section class="page on" id="p-dash">
+      <div class="sec" style="display:flex;justify-content:space-between;align-items:center;padding-right:16px">Upcoming events <button class="sm a" onclick="addEvent()">+ Add event</button></div>
+      <div id="evlist"></div>
       <div class="sec">Staff attendance</div>
       <div class="chips" id="dchips"></div>
       <div class="two" style="padding:0 16px 10px"><label class="fld"><small>From</small><input type="date" id="df"></label><label class="fld"><small>To</small><input type="date" id="dt"></label></div>
@@ -100,7 +102,7 @@ document.querySelectorAll('.nb').forEach(b => b.onclick = () => OWW.go(b.dataset
 
 OWW.start({
   title: 'OWW Admin', sub: 'Managers & directors only', allow: ['Kitchen Manager', 'Director'],
-  ready(u) { $('sub').textContent = u.name + ' · ' + u.role; OWW.account('acct'); $('dir').classList.toggle('hide', u.role !== 'Director'); load(); setP('week'); }
+  ready(u) { $('sub').textContent = u.name + ' · ' + u.role; OWW.account('acct'); $('dir').classList.toggle('hide', u.role !== 'Director'); load(); setP('week'); loadEvents(); }
 });
 
 async function load(manual) {
@@ -108,6 +110,41 @@ async function load(manual) {
   catch (e) { OWW.toast(e.message, 'red'); return; }
   resetDel(); renderAll();
 }
+// ── upcoming events ──
+let EV = [];
+const evSort = () => EV.sort((a, b) => a.date === b.date ? (a.time || '').localeCompare(b.time || '') : a.date.localeCompare(b.date));
+const rel = d => { const n = Math.round((new Date(d + 'T12:00') - new Date(OWW.ymd(new Date()) + 'T12:00')) / 864e5); return n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : 'in ' + n + ' days'; };
+async function loadEvents() { try { EV = await OWW.api('eventList'); } catch (e) { return OWW.toast(e.message, 'red'); } renderEvents(); }
+function renderEvents() {
+  $('evlist').innerHTML = '<div class="card">' + (EV.length ? EV.map(e => { const d = new Date(e.date + 'T12:00');
+    return `<div class="row"><div style="min-width:46px;text-align:center"><div style="font-weight:700;font-size:20px;line-height:1">${d.getDate()}</div><div class="sub">${d.toLocaleDateString('en-GB', { month: 'short' })}</div></div>
+      <div class="grow"><div class="nm">${esc(e.title)}</div><div class="sub">${rel(e.date)}${e.time ? ' · ' + esc(e.time) : ''}${e.notes ? ' · ' + esc(e.notes) : ''}</div></div>
+      ${e.pending ? '<span class="tag a">saving</span>' : `<button class="sm" aria-label="Delete event" onclick="delEvent('${esc(e.id)}')">✕</button>`}</div>`; }).join('')
+    : '<div class="empty">No upcoming events. Tap “Add event”.</div>') + '</div>';
+}
+function addEvent() {
+  OWW.sheet(`<div class="nm" style="font-size:18px">Add event</div><input id="et" placeholder="Title, e.g. Birthday party – 30 people" maxlength="80">
+    <div class="two"><label class="fld"><small>Date</small><input type="date" id="ed" value="${OWW.ymd(new Date())}"></label><label class="fld"><small>Time (optional)</small><input type="time" id="eh"></label></div>
+    <input id="en" placeholder="Notes (optional)" maxlength="160"><div class="err" id="eer"></div>
+    <button class="btn p w" onclick="saveEvent()">Save event</button><button class="btn w" onclick="OWW.close()">Cancel</button>`);
+}
+async function saveEvent() {
+  const e = { title: $('et').value.trim(), date: $('ed').value, time: $('eh').value, notes: $('en').value.trim() };
+  if (!e.title) { $('eer').textContent = 'Give the event a title'; return; }
+  if (!e.date || e.date < OWW.ymd(new Date())) { $('eer').textContent = 'Pick today or a future date'; return; }
+  OWW.close(); const t = { ...e, id: 'tmp' + Date.now(), pending: true }; EV.push(t); evSort(); renderEvents(); // shown instantly
+  try { const r = await OWW.api('eventAdd', e); t.id = r.id; delete t.pending; renderEvents(); OWW.toast('Event added ✓'); }
+  catch (x) { EV = EV.filter(i => i !== t); renderEvents(); OWW.toast(x.message, 'red'); }
+}
+async function delEvent(id) {
+  if (!confirm('Delete this event?')) return; const keep = EV; EV = EV.filter(e => e.id !== id); renderEvents();
+  try { await OWW.api('eventDelete', { id }); } catch (e) { EV = keep; renderEvents(); OWW.toast(e.message, 'red'); }
+}
+async function refresh() {
+  const b = $('rf'); b.disabled = true; b.textContent = 'Updating…';
+  await Promise.all([load(), loadDash(), loadEvents()]); b.disabled = false; b.textContent = '↻ Refresh'; OWW.toast('Updated');
+}
+
 // ── attendance dashboard ──
 let P = 'week', S = [];
 OWW.hooks['p-dash'] = () => loadDash();

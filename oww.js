@@ -75,7 +75,7 @@ OWW.start = cfg => {
   };
   // restore a still-valid session (12h) so people are not asked every time
   const s = JSON.parse(localStorage.getItem('oww_s') || 'null');
-  if (s) { OWW.tk = s.tk; OWW.api('me').then(u => { try { enter(s.tk, u); } catch (x) { OWW.logout(); } }).catch(() => { OWW.tk = null; }); }
+  if (s) { OWW.tk = s.tk; try { enter(s.tk, s.user); OWW.api('me').catch(() => {}); } catch (x) { OWW.logout(); } } // opens instantly; an expired session returns to login
 };
 
 // settings card: who you are, change password, sign out

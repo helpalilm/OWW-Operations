@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F0F0F">
+<link rel="manifest" href="manifest-inventory.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>OWW Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="oww.css">
+</head>
+<body>
+<div id="login"></div>
+
+<div id="app" class="hide">
+  <header id="top">
+    <div class="brand"><img src="logo.png" alt=""><div><b>Admin</b><small id="sub"></small></div></div>
+    <button class="sm" onclick="load(true)">Refresh</button>
+  </header>
+
+  <main id="main">
+    <section class="page on" id="p-dash">
+      <div class="sec">Staff attendance</div>
+      <div class="chips" id="dchips"></div>
+      <div class="two" style="padding:0 16px 10px"><label class="fld"><small>From</small><input type="date" id="df"></label><label class="fld"><small>To</small><input type="date" id="dt"></label></div>
+      <div class="stats" id="dstats"></div>
+      <div class="cols">
+        <div><div class="sec">Hours per person</div><div class="card" id="dsum"></div></div>
+        <div><div class="sec">Shift log</div><div id="dlist"></div></div>
+      </div>
+    </section>
+
+    <section class="page" id="p-stock">
+      <div class="stats" id="stats"></div>
+      <div class="bar"><button class="btn" onclick="OWW.go('p-imp')">Import count from photo / PDF / CSV</button></div>
+      <div class="find"><input id="sq" placeholder="Search stock…" autocomplete="off"></div>
+      <div class="chips" id="flt"></div>
+      <div class="note" id="stockhint"></div>
+      <div class="card" id="stocklist"></div>
+    </section>
+
+    <section class="page" id="p-imp">
+      <div class="sec">Import a stock count</div>
+      <div class="note">Upload a photo or PDF of your count sheet, or a CSV. You review everything before anything is saved. Photos work best when printed or in clear block letters, taken flat and in good light.</div>
+      <div class="card"><div class="row" style="display:grid;gap:10px">
+        <input type="file" id="file" accept="image/*,application/pdf,.csv,.txt">
+        <button class="btn p w" id="scan" onclick="scan()">Read file</button>
+        <button class="btn w" onclick="dlSheet()">Download blank count sheet (CSV)</button>
+        <div class="sub" id="prog"></div></div></div>
+      <div id="review"></div>
+    </section>
+
+    <section class="page" id="p-order">
+      <div class="cols">
+        <div><div class="sec">Order list</div><div class="note">Items at or below minimum stock, sized from weekly usage.</div>
+          <div class="card" id="orderlist"></div>
+          <div class="bar"><button class="btn p" onclick="sendOrder()">Send order via WhatsApp</button></div></div>
+        <div><div class="sec">Staff alerts <span class="tag r" id="ac">0</span></div>
+          <div class="note">Only managers can mark ordered or dismiss. Resets when you confirm Friday’s delivery.</div>
+          <div id="alerts"></div></div>
+      </div>
+    </section>
+
+    <section class="page" id="p-del">
+      <div class="sec">Confirm delivery</div>
+      <div class="note">Enter the boxes actually received. Stock is added automatically and staff alerts reset.</div>
+      <div class="card" id="dellist"></div>
+      <div class="find"><select id="deladd"></select></div>
+      <div class="bar"><button class="btn g" onclick="confirmDel()">Confirm &amp; update stock</button></div>
+    </section>
+
+    <section class="page" id="p-set">
+      <div id="acct"></div>
+      <div id="dir" class="hide">
+        <div class="sec">Users</div>
+        <div class="card" id="users"></div>
+        <div class="bar"><button class="btn p" onclick="addUser()">Add user</button></div>
+      </div>
+    </section>
+  </main>
+
+  <nav id="nav">
+    <button class="nb on" data-p="p-dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Dashboard</button>
+    <button class="nb" data-p="p-stock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Stock</button>
+    <button class="nb" data-p="p-order"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/></svg>Order<span class="bdg hide" id="ob"></span></button>
+    <button class="nb" data-p="p-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><path d="M16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Delivery</button>
+    <button class="nb" data-p="p-set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>Settings</button>
+  </nav>
+</div>
+
+<div id="sheet"><div id="sheetc"></div></div>
+<script src="oww.js"></script>
+<script>
+const $ = OWW.$, esc = OWW.esc;
+let D = { inv: [], order: [], alerts: [], users: [] }, filt = 'ALL', del = {};
+document.querySelectorAll('.nb').forEach(b => b.onclick = () => OWW.go(b.dataset.p));
+
+OWW.start({
+  title: 'OWW Admin', sub: 'Managers & directors only', allow: ['Kitchen Manager', 'Director'],
+  ready(u) { $('sub').textContent = u.name + ' · ' + u.role; OWW.account('acct'); $('dir').classList.toggle('hide', u.role !== 'Director'); load(); setP('week'); }
+});
+
+async function load(manual) {
+  try { D = await OWW.api('invData'); if (manual) OWW.toast('Data refreshed'); }
+  catch (e) { OWW.toast(e.message, 'red'); return; }
+  resetDel(); renderAll();
+}
+// ── attendance dashboard ──
+let P = 'week', S = [];
+OWW.hooks['p-dash'] = () => loadDash();
+function range(p) {
+  const d = new Date(); if (p === 'today') return [OWW.ymd(d), OWW.ymd(d)];
+  if (p === 'week') { const m = new Date(d); m.setDate(d.getDate() - (d.getDay() + 6) % 7); const e = new Date(m); e.setDate(m.getDate() + 6); return [OWW.ymd(m), OWW.ymd(e)]; }
+  return [OWW.ymd(new Date(d.getFullYear(), d.getMonth(), 1)), OWW.ymd(new Date(d.getFullYear(), d.getMonth() + 1, 0))];
+}
+function setP(p) { P = p; if (p !== 'custom') { const r = range(p); $('df').value = r[0]; $('dt').value = r[1]; } loadDash(); }
+$('df').onchange = $('dt').onchange = () => { P = 'custom'; loadDash(); };
+$('dchips').onclick = e => { const b = e.target.closest('[data-p]'); if (b) setP(b.dataset.p); };
+async function loadDash() { try { S = await OWW.api('shiftAll', { from: $('df').value, to: $('dt').value }); } catch (e) { return OWW.toast(e.message, 'red'); } renderDash(); }
+function renderDash() {
+  $('dchips').innerHTML = [['today', 'Today'], ['week', 'This week'], ['month', 'This month'], ['custom', 'Custom']].map(c => `<button class="chip ${P === c[0] ? 'on' : ''}" data-p="${c[0]}">${c[1]}</button>`).join('');
+  const per = {}; S.forEach(x => { const p = per[x.uid] = per[x.uid] || { name: x.name, role: x.role, n: 0, h: 0 }; p.n++; p.h += x.hours; });
+  const ppl = Object.values(per).sort((a, b) => b.h - a.h), tot = S.reduce((s, x) => s + x.hours, 0);
+  $('dstats').innerHTML = [['Total hours', OWW.hrs(tot)], ['Shifts', S.length], ['Staff', ppl.length]].map(x => `<div class="stat"><small>${x[0]}</small><b style="font-size:22px">${x[1]}</b></div>`).join('');
+  $('dsum').innerHTML = ppl.length ? ppl.map(p => `<div class="row"><div class="grow"><div class="nm">${esc(p.name)}</div><div class="sub">${esc(p.role)} · ${p.n} shift${p.n > 1 ? 's' : ''}</div></div><b>${OWW.hrs(p.h)}</b></div>`).join('') : '<div class="empty">No shifts in this period</div>';
+  const g = {}; S.forEach(x => (g[x.date] = g[x.date] || []).push(x));
+  $('dlist').innerHTML = Object.keys(g).length ? Object.keys(g).map(d => `<div class="sec" style="padding-top:0">${OWW.day(d)}</div><div class="card">` + g[d].map(x =>
+    `<div class="row"><span class="tag b">${OWW.kind(x.start)}</span><div class="grow"><div class="nm">${esc(x.name)}</div><div class="sub">${esc(x.start)} → ${esc(x.end)}${x.memo ? ' · ' + esc(x.memo) : ''}</div></div><b>${OWW.hrs(x.hours)}</b><button class="sm" aria-label="Delete shift" onclick="delShift('${esc(x.id)}')">✕</button></div>`).join('') + '</div>').join('')
+    : '<div class="empty">No shifts in this period</div>';
+}
+async function delShift(id) { if (!confirm('Delete this shift record?')) return; try { await OWW.api('shiftDelete', { id }); await loadDash(); } catch (e) { OWW.toast(e.message, 'red'); } }
+
+function renderAll() { renderStock(); renderOrder(); renderAlerts(); renderDel(); renderUsers(); }
+
+// ── stock ──
+const tagOf = s => ({ CRITICAL: ['r', 'Critical'], LOW: ['a', 'Low'], OK: ['g', 'OK'], UNCOUNTED: ['', 'Not counted'] }[s]);
+function renderStock() {
+  const c = s => D.inv.filter(i => i.status === s).length;
+  $('stats').innerHTML = [['Items', D.inv.length, ''], ['Critical', c('CRITICAL'), 'var(--red)'], ['Low', c('LOW'), 'var(--amber)'], ['Not counted', c('UNCOUNTED'), '']]
+    .map(s => `<div class="stat"><small>${s[0]}</small><b style="color:${s[2] || 'inherit'}">${s[1]}</b></div>`).join('');
+  $('flt').innerHTML = [['ALL', 'All'], ['CRITICAL', 'Critical'], ['LOW', 'Low'], ['UNCOUNTED', 'Not counted']]
+    .map(f => `<button class="chip ${filt === f[0] ? 'on' : ''}" data-f="${f[0]}">${f[1]}</button>`).join('');
+  const q = $('sq').value.trim().toLowerCase();
+  const l = D.inv.filter(i => (filt === 'ALL' || i.status === filt) && (!q || i.name.toLowerCase().includes(q)));
+  $('stockhint').textContent = c('UNCOUNTED') ? 'Type the quantity you have now next to each item. Items stay “Not counted” until you do, and only counted items appear in the order list.' : '';
+  $('stocklist').innerHTML = l.length ? l.map(i => { const t = tagOf(i.status);
+    return `<div class="row"><div class="grow"><div class="nm">${esc(i.name)}</div><div class="sub">${esc(i.storage)} · min ${i.min} · ${esc(i.unit)}</div></div>
+      <span class="tag ${t[0]}">${t[1]}</span><input class="qty" type="number" step="any" inputmode="decimal" min="0" data-id="${esc(i.id)}" value="${i.status === 'UNCOUNTED' ? '' : i.cur}" placeholder="0" aria-label="Stock of ${esc(i.name)}"></div>`; }).join('')
+    : '<div class="empty">No items match</div>';
+}
+$('sq').oninput = renderStock;
+$('flt').onclick = e => { const b = e.target.closest('[data-f]'); if (b) { filt = b.dataset.f; renderStock(); } };
+$('stocklist').onchange = async e => {
+  const el = e.target; if (!el.dataset.id || el.value === '') return;
+  try { await OWW.api('updateInventory', { rawId: el.dataset.id, stock: el.value }); OWW.toast('Saved ✓'); await load(); }
+  catch (x) { OWW.toast(x.message, 'red'); }
+};
+
+// ── order ──
+function renderOrder() {
+  $('ob').textContent = D.order.length; $('ob').classList.toggle('hide', !D.order.length);
+  $('orderlist').innerHTML = D.order.length
+    ? `<div class="ch"><span>Items to order</span><span class="tag b">${D.order.reduce((s, i) => s + i.boxes, 0)} boxes</span></div>` +
+      D.order.map(i => `<div class="row"><div class="grow"><div class="nm">${esc(i.name)}</div><div class="sub">${i.cur} ${esc(i.unit)} left · 1 box = ${i.box}</div></div><b style="color:var(--amber);font-size:18px">${i.boxes} box</b></div>`).join('')
+    : '<div class="empty">Nothing to order. Count your stock on the Stock tab, then items at or below minimum appear here.</div>';
+}
+function sendOrder() {
+  if (!D.order.length) return OWW.toast('Nothing to order', 'amber');
+  window.open('https://wa.me/?text=' + encodeURIComponent('*Ordine*\n\n' + D.order.map((i, n) => `${n + 1}. ${i.name} — ${i.boxes} box`).join('\n')), '_blank');
+}
+function renderAlerts() {
+  $('ac').textContent = D.alerts.length + ' open'; $('ac').className = 'tag ' + (D.alerts.length ? 'r' : 'g');
+  $('alerts').innerHTML = D.alerts.length ? '<div class="card">' + D.alerts.map(a => `<div class="row" style="flex-wrap:wrap"><div class="grow"><div class="nm">${esc(a['Item Name'])}</div>
+    <div class="sub">${esc(a['Flagged By'])} · ${esc(String(a['Date Raised']).slice(0, 10))} · ${esc(a['Qty Remaining'])}${a['Notes'] ? ' · “' + esc(a['Notes']) + '”' : ''}</div></div>
+    <button class="sm g" onclick="resolve('${esc(a['Alert ID'])}','ordered')">Mark ordered</button><button class="sm" onclick="resolve('${esc(a['Alert ID'])}','dismissed')">Dismiss</button></div>`).join('') + '</div>'
+    : '<div class="empty">No open alerts</div>';
+}
+async function resolve(id, how) { try { await OWW.api('resolveAlert', { alertId: id, how }); await load(); } catch (e) { OWW.toast(e.message, 'red'); } }
+
+// ── delivery ──
+function resetDel() { del = {}; D.order.forEach(i => del[i.rawId] = { name: i.name, ordered: i.boxes, got: i.boxes, box: i.box, unit: i.unit }); }
+function renderDel() {
+  const k = Object.keys(del);
+  $('dellist').innerHTML = k.length ? k.map(id => `<div class="row"><div class="grow"><div class="nm">${esc(del[id].name)}</div><div class="sub">ordered ${del[id].ordered} box · 1 box = ${del[id].box} ${esc(del[id].unit)}</div></div>
+    <input class="qty" type="number" min="0" step="1" inputmode="numeric" data-r="${esc(id)}" value="${del[id].got}" aria-label="Boxes received"></div>`).join('')
+    : '<div class="empty">No pending order. Add received items below.</div>';
+  $('deladd').innerHTML = '<option value="">+ Add another received item…</option>' + D.inv.filter(i => !del[i.id]).map(i => `<option value="${esc(i.id)}">${esc(i.name)}</option>`).join('');
+}
+$('dellist').oninput = e => { if (e.target.dataset.r) del[e.target.dataset.r].got = e.target.value; };
+$('deladd').onchange = e => { const i = D.inv.find(x => x.id === e.target.value); if (i) { del[i.id] = { name: i.name, ordered: 0, got: 1, box: i.box, unit: i.unit }; renderDel(); } };
+async function confirmDel() {
+  const items = Object.keys(del).map(id => ({ rawId: id, name: del[id].name, boxesOrdered: del[id].ordered, boxesReceived: del[id].got })).filter(i => +i.boxesReceived > 0);
+  if (!items.length) return OWW.toast('Enter received quantities first', 'amber');
+  try { await OWW.api('confirmDelivery', { items, orderDate: new Date().toISOString().slice(0, 10) }); OWW.toast('Stock updated · alerts reset ✓'); await load(); OWW.go('p-stock'); }
+  catch (e) { OWW.toast(e.message, 'red'); }
+}
+
+// ── users (director) ──
+function renderUsers() {
+  $('users').innerHTML = (D.users || []).map(u => { const on = String(u.status).toUpperCase() === 'ACTIVE';
+    return `<div class="row" style="flex-wrap:wrap"><div class="grow"><div class="nm">${esc(u.full)}</div><div class="sub">${esc(u.email || 'no email yet')} · ${esc(u.role)}${u.hasPw ? '' : ' · no password'}</div></div>
+      <span class="tag ${on ? 'g' : 'r'}">${on ? 'Active' : 'Inactive'}</span>
+      <button class="sm" onclick="resetPw('${esc(u.id)}','${esc(u.name)}')">Password</button>
+      ${u.id === OWW.user.id ? '' : `<button class="sm ${on ? '' : 'g'}" onclick="setActive('${esc(u.id)}',${!on})">${on ? 'Deactivate' : 'Reactivate'}</button>`}</div>`; }).join('') || '<div class="empty">No users</div>';
+}
+async function setActive(id, active) { try { await OWW.api('setUserStatus', { userId: id, active }); await load(); } catch (e) { OWW.toast(e.message, 'red'); } }
+function addUser() {
+  OWW.sheet(`<div class="nm" style="font-size:18px">Add user</div>
+    <input id="nf" placeholder="First name"><input id="nl" placeholder="Last name"><input id="ne" type="email" placeholder="Email" autocapitalize="none">
+    <select id="nr"><option>Staff</option><option>Kitchen Manager</option><option>Director</option></select>
+    <input id="np" type="text" placeholder="Temporary password (8+ characters)"><div class="err" id="ner"></div>
+    <button class="btn p w" onclick="saveUser()">Create user</button><button class="btn w" onclick="OWW.close()">Cancel</button>`);
+}
+async function saveUser() {
+  try { await OWW.api('addUser', { first: $('nf').value.trim(), last: $('nl').value.trim(), email: $('ne').value.trim(), role: $('nr').value, password: $('np').value });
+    OWW.close(); OWW.toast('User created'); await load(); } catch (e) { $('ner').textContent = e.message; }
+}
+function resetPw(id, n) {
+  OWW.sheet(`<div class="nm" style="font-size:18px">New password for ${esc(n)}</div><input id="rp" type="text" placeholder="New password (8+ characters)"><div class="err" id="rer"></div>
+    <button class="btn p w" onclick="doReset('${esc(id)}')">Save password</button><button class="btn w" onclick="OWW.close()">Cancel</button>`);
+}
+async function doReset(id) { try { await OWW.api('resetUserPassword', { userId: id, password: $('rp').value }); OWW.close(); OWW.toast('Password updated'); await load(); } catch (e) { $('rer').textContent = e.message; } }
+
+// ── import: photo / PDF / CSV → review → bulk update ──
+const TESS = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js',
+  PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+  PDFW = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js', NUM = /\d+(?:[.,]\d+)?/g;
+let R = [];
+const prog = t => $('prog').textContent = t;
+const lib = src => new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error('Could not load the reader. Check your internet connection.')); document.head.appendChild(s); });
+const nz = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/(\d),(\d)/g, '$1.$2').replace(/[^a-z0-9.\s]/g, ' ').replace(/\.(?!\d)/g, ' ');
+const toks = s => nz(s).split(/\s+/).filter(t => t.length > 1 || /\d/.test(t));
+function lev(a, b) { const d = Array.from({ length: a.length + 1 }, (_, i) => [i]); for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length]; }
+const tsim = (a, b) => a === b ? 1 : (a.length < 4 || b.length < 4 ? 0 : 1 - lev(a, b) / Math.max(a.length, b.length));
+
+function matchLine(text) {
+  const lt = toks(text), words = lt.filter(t => !/^[\d.]+$/.test(t)); if (!words.length) return null;
+  let best = null, bs = 0;
+  for (const it of D.inv) {
+    it.tk = it.tk || toks(it.name); let m = 0; const used = new Set();
+    it.tk.forEach(t => { let s = 0, j = -1; lt.forEach((u, k) => { if (!used.has(k)) { const x = tsim(t, u); if (x > s) { s = x; j = k; } } }); if (s >= .75) { m += s; used.add(j); } });
+    const sc = 2 * m / (it.tk.length + words.length); if (sc > bs) { bs = sc; best = it; }
+  }
+  return bs >= .35 ? { it: best, sc: bs } : null;
+}
+function parseLine(raw, csv) {
+  let text = raw.trim(), qty = null; if (text.length < 2) return null;
+  if (csv) { const c = text.split(/[;\t,]/).map(s => s.replace(/^"|"$/g, '').trim()); text = c[0]; const n = (c[1] || '').match(NUM); qty = n ? parseFloat(n[0].replace(',', '.')) : null; if (qty === null) return null; }
+  const m = matchLine(text);
+  if (!csv) { const nums = text.match(NUM) || []; if (m) (m.it.name.match(NUM) || []).forEach(x => { const i = nums.indexOf(x); if (i > -1) nums.splice(i, 1); });
+    qty = nums.length ? parseFloat(nums[nums.length - 1].replace(',', '.')) : null; }
+  if (!m && qty === null) return null; // headings and noise
+  return { line: text, id: m ? m.it.id : '', sc: m ? m.sc : 0, qty };
+}
+async function toCanvas(f) {
+  const bm = await createImageBitmap(f, { imageOrientation: 'from-image' }), k = Math.min(1, 2200 / Math.max(bm.width, bm.height)), c = document.createElement('canvas');
+  c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k);
+  const x = c.getContext('2d'); x.filter = 'grayscale(1) contrast(1.3)'; x.drawImage(bm, 0, 0, c.width, c.height); return c;
+}
+async function ocr(canvases) {
+  prog('Loading reader (first time takes a moment)…'); await lib(TESS);
+  const w = await Tesseract.createWorker('ita+eng', 1, { logger: m => { if (m.status === 'recognizing text') prog('Reading… ' + Math.round(m.progress * 100) + '%'); } });
+  let t = ''; for (const c of canvases) t += (await w.recognize(c)).data.text + '\n'; await w.terminate(); return t.split('\n');
+}
+async function pdfLines(f) {
+  prog('Opening PDF…'); await lib(PDFJS); pdfjsLib.GlobalWorkerOptions.workerSrc = PDFW;
+  const doc = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise, lines = [], pages = [];
+  for (let p = 1; p <= doc.numPages; p++) {
+    const pg = await doc.getPage(p), tc = await pg.getTextContent(), rows = {}; pages.push(pg);
+    tc.items.forEach(i => { const y = Math.round(i.transform[5] / 5); (rows[y] = rows[y] || []).push(i); });
+    Object.keys(rows).map(Number).sort((a, b) => b - a).forEach(y => lines.push(rows[y].sort((a, b) => a.transform[4] - b.transform[4]).map(i => i.str).join(' ')));
+  }
+  if (lines.join('').length > 40) return lines; // normal PDF with real text: exact
+  const cs = []; // scanned PDF: render pages and read them as images
+  for (const pg of pages) { const vp = pg.getViewport({ scale: 2 }), c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height; await pg.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise; cs.push(c); }
+  return ocr(cs);
+}
+async function scan() {
+  const f = $('file').files[0]; if (!f) return OWW.toast('Choose a file first', 'amber');
+  const b = $('scan'); b.disabled = true; R = [];
+  try {
+    const csv = /\.csv$/i.test(f.name); let lines;
+    if (csv || /\.txt$/i.test(f.name)) lines = (await f.text()).split(/\r?\n/);
+    else if (f.type === 'application/pdf') lines = await pdfLines(f);
+    else lines = await ocr([await toCanvas(f)]);
+    R = lines.map(l => parseLine(l, csv)).filter(Boolean);
+    if (!R.length) OWW.toast('Nothing recognised. Try a sharper photo, a PDF or the CSV sheet.', 'amber');
+  } catch (e) { OWW.toast(e.message, 'red'); }
+  prog(''); b.disabled = false; renderReview();
+}
+function renderReview() {
+  if (!R.length) { $('review').innerHTML = ''; return; }
+  const ready = R.filter(r => r.id && r.qty !== null).length, chk = R.filter(r => r.id && r.sc < .6).length, un = R.filter(r => !r.id).length;
+  const opts = D.inv.map(x => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('');
+  $('review').innerHTML = `<div class="sec">Review</div><div class="note">${ready} ready · ${chk} to double-check · ${un} not matched (choose the item, or leave “skip”).</div>
+    <div class="card">${R.map((r, i) => `<div class="row" style="flex-wrap:wrap"><div class="grow"><div class="sub">“${esc(r.line)}”</div>
+      <select data-i="${i}" aria-label="Item"><option value="">— skip —</option>${opts.replace(`value="${esc(r.id)}"`, `value="${esc(r.id)}" selected`)}</select></div>
+      <span class="tag ${r.id ? (r.sc < .6 ? 'a' : 'g') : ''}">${r.id ? (r.sc < .6 ? 'check' : 'match') : 'no match'}</span>
+      <input class="qty" type="number" step="any" inputmode="decimal" data-q="${i}" value="${r.qty ?? ''}" placeholder="qty" aria-label="Quantity"></div>`).join('')}</div>
+    <div class="bar"><button class="btn g" onclick="applyImport()">Apply counts to stock</button></div>`;
+}
+$('review').onchange = e => { const i = e.target.dataset.i; if (i !== undefined) { R[i].id = e.target.value; R[i].sc = 1; } };
+$('review').oninput = e => { const i = e.target.dataset.q; if (i !== undefined) R[i].qty = e.target.value === '' ? null : parseFloat(e.target.value); };
+async function applyImport() {
+  const m = {}; R.forEach(r => { if (r.id && r.qty !== null && !isNaN(r.qty)) m[r.id] = r.qty; });
+  const items = Object.keys(m).map(k => ({ rawId: k, stock: m[k] })); if (!items.length) return OWW.toast('Nothing to apply yet', 'amber');
+  try { const n = await OWW.api('bulkInventory', { items }); OWW.toast(n + ' items updated ✓'); R = []; $('file').value = ''; renderReview(); await load(); OWW.go('p-stock'); }
+  catch (e) { OWW.toast(e.message, 'red'); }
+}
+function dlSheet() {
+  const t = 'Item;Count;Unit\n' + D.inv.map(i => `"${i.name.replace(/"/g, '""')}";;${i.unit}`).join('\n'), a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + t], { type: 'text/csv' })); a.download = 'oww-count-sheet.csv'; a.click();
+}
+</script>
+</body>
+</html>

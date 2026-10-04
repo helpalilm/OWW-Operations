@@ -3,9 +3,11 @@ const stTag = x => x.pending ? '<span class="tag a">syncing</span>' : x.status =
 let EVK = [], H = { fridges: [], logs: [] }, ph = 'Start';
 const relD = d => { const n = Math.round((new Date(d + 'T12:00') - new Date(OWW.ymd(new Date()) + 'T12:00')) / 864e5); return n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : 'in ' + n + ' days'; };
 
+let RQ = { list: [], users: [] };
 async function loadX() {
-  try { [EVK, H] = await Promise.all([OWW.api('eventList'), OWW.api('tempData', {})]); } catch (e) { return; }
-  renderEvk(); renderChk();
+  const [e, h, q] = await Promise.all([OWW.api('eventList').catch(() => null), OWW.api('tempData', {}).catch(() => null), OWW.api('reqList').catch(() => null)]);
+  if (e) EVK = e; if (h) H = h; if (q) RQ = q;
+  renderEvk(); renderChk(); renderReq();
 }
 // ── events ──
 function renderEvk() {
@@ -43,10 +45,12 @@ async function saveTemps() {
   b.disabled = false;
 }
 // ── my planned shifts (inside the Shifts tab) ──
+const ABSL = { REST: 'Rest', HOLIDAY: 'Holiday', SICK: 'Sick', LEAVE: 'Leave', ABSENT: 'Absent' };
 function renderRota() {
   const l = A.rota || [];
-  $('rotam').innerHTML = l.length ? '<div class="sec">My upcoming shifts</div><div class="card">' + l.map(r => `<div class="row"><div class="grow"><div class="nm">${OWW.day(r.date)}</div>
-    <div class="sub">${esc(r.start)} → ${esc(r.end)}${r.note ? ' · ' + esc(r.note) : ''}</div></div><button class="sm a" data-use="${esc(r.id)}">Use for log</button></div>`).join('') + '</div>'
+  $('rotam').innerHTML = l.length ? '<div class="sec">My upcoming shifts</div><div class="card">' + l.map(r => r.type && r.type !== 'SHIFT'
+    ? `<div class="row"><div class="grow"><div class="nm">${OWW.day(r.date)}</div></div><span class="tag ${r.type === 'HOLIDAY' ? 'g' : r.type === 'SICK' ? 'r' : ''}">${ABSL[r.type] || r.type}</span></div>`
+    : `<div class="row"><div class="grow"><div class="nm">${OWW.day(r.date)}</div><div class="sub">${esc(r.start)} → ${esc(r.end)}${r.note ? ' · ' + esc(r.note) : ''}</div></div><button class="sm a" data-use="${esc(r.id)}">Use for log</button></div>`).join('') + '</div>'
     : '<div class="note">No planned shifts yet. Your manager adds them in the rota.</div>';
 }
 $('rotam').onclick = e => {
@@ -67,4 +71,40 @@ async function showRecipe() {
       <div><div class="sub" style="margin-bottom:4px">Method</div><div style="white-space:pre-wrap;font-size:14px">${r.method ? esc(r.method) : '<span class="sub">No method written yet. Add it in the global sheet, RECIPES tab.</span>'}</div>${r.notes ? `<div class="sub" style="margin-top:8px">${esc(r.notes)}</div>` : ''}</div>
       <button class="btn w" onclick="drawQty()">Back</button>`);
   } catch (e) { drawQty(); OWW.toast(e.message, 'red'); }
+}
+
+// ── requests: day off + ask a colleague to cover ──
+const KIND = { HOLIDAY: 'Holiday', REST: 'Rest day', LEAVE: 'Leave' };
+const RST = { PENDING_PEER: ['a', 'Waiting for colleague'], PENDING: ['a', 'Waiting for manager'], APPROVED: ['g', 'Approved'], DECLINED: ['r', 'Declined'], CANCELLED: ['', 'Cancelled'] };
+async function loadReq() { try { RQ = await OWW.api('reqList'); } catch (e) { return; } renderReq(); }
+function renderReq() {
+  const me = OWW.user.id, mine = RQ.list.filter(r => r.uid === me), toMe = RQ.list.filter(r => r.peerId === me && r.status === 'PENDING_PEER');
+  $('reqs').innerHTML = '<div class="sec">Requests</div><div class="bar"><button class="btn" onclick="reqForm(\'off\')">Request day off</button><button class="btn" onclick="reqForm(\'swap\')">Ask a colleague to cover</button></div>' +
+    (toMe.length ? '<div class="card">' + toMe.map(r => `<div class="row" style="flex-wrap:wrap"><div class="grow"><div class="nm">${esc(r.name)} asks you to cover</div><div class="sub">${OWW.day(r.from)} · ${esc(r.shift)}</div></div><button class="sm g" data-rp="${esc(r.id)}:1">Accept</button><button class="sm" data-rp="${esc(r.id)}:0">Decline</button></div>`).join('') + '</div>' : '') +
+    (mine.length ? '<div class="card">' + mine.slice(0, 8).map(r => { const s = RST[r.status] || ['', r.status];
+      return `<div class="row"><div class="grow"><div class="nm">${r.type === 'DAY_OFF' ? (KIND[r.kind] || 'Day off') : 'Cover: ' + esc(r.peerName)}</div><div class="sub">${OWW.day(r.from)}${r.to && r.to !== r.from ? ' → ' + OWW.day(r.to) : ''}${r.shift ? ' · ' + esc(r.shift) : ''}${r.dnote ? ' · “' + esc(r.dnote) + '”' : ''}</div></div>
+        <span class="tag ${s[0]}">${s[1]}</span>${String(r.status).startsWith('PENDING') ? `<button class="sm" data-rc="${esc(r.id)}" aria-label="Cancel request">✕</button>` : ''}</div>`; }).join('') + '</div>' : '');
+}
+$('reqs').onclick = async e => {
+  const p = e.target.closest('[data-rp]'), c = e.target.closest('[data-rc]'); if (!p && !c) return;
+  try { if (p) { const [id, ok] = p.dataset.rp.split(':'); await OWW.api('reqPeer', { id, accept: ok === '1' }); OWW.toast(ok === '1' ? 'Accepted ✓' : 'Declined'); } else await OWW.api('reqCancel', { id: c.dataset.rc }); await loadReq(); }
+  catch (x) { OWW.toast(x.message, 'red'); }
+};
+function reqForm(kind) {
+  if (kind === 'off') return OWW.sheet(`<div class="nm" style="font-size:18px">Request day off</div>
+    <div class="two"><label class="fld"><small>From</small><input type="date" id="rf1" value="${OWW.ymd(new Date())}"></label><label class="fld"><small>To (optional)</small><input type="date" id="rf2"></label></div>
+    <select id="rk"><option value="HOLIDAY">Holiday</option><option value="REST">Rest day</option><option value="LEAVE">Leave</option></select>
+    <input id="rn2" placeholder="Note (optional)" maxlength="120"><div class="err" id="rerr"></div>
+    <button class="btn p w" onclick="sendReq('DAY_OFF')">Send request</button><button class="btn w" onclick="OWW.close()">Cancel</button>`);
+  const sh = (A.rota || []).filter(r => !r.type || r.type === 'SHIFT');
+  if (!sh.length) return OWW.toast('You have no planned shifts to hand over yet', 'amber');
+  OWW.sheet(`<div class="nm" style="font-size:18px">Ask a colleague to cover</div>
+    <select id="rs1">${sh.map(r => `<option value="${esc(r.id)}">${OWW.day(r.date)} · ${esc(r.start)} → ${esc(r.end)}</option>`).join('')}</select>
+    <select id="rp1">${RQ.users.map(u => `<option value="${esc(u.id)}">${esc(u.full)}</option>`).join('')}</select>
+    <input id="rn2" placeholder="Note (optional)" maxlength="120"><div class="err" id="rerr"></div>
+    <button class="btn p w" onclick="sendReq('SWAP')">Send request</button><button class="btn w" onclick="OWW.close()">Cancel</button>`);
+}
+async function sendReq(type) {
+  const b = type === 'DAY_OFF' ? { type, from: $('rf1').value, to: $('rf2').value || $('rf1').value, kind: $('rk').value, note: $('rn2').value.trim() } : { type, rotaId: $('rs1').value, peerId: $('rp1').value, note: $('rn2').value.trim() };
+  try { await OWW.api('reqCreate', b); OWW.close(); OWW.toast('Request sent ✓'); await loadReq(); } catch (e) { $('rerr').textContent = e.message; }
 }

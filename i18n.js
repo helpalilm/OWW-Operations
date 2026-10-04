@@ -54,7 +54,7 @@
     'Add fridge': 'Aggiungi frigo', 'Edit fridge': 'Modifica frigo', 'Name': 'Nome', 'Type': 'Tipo', 'Fridge': 'Frigorifero', 'Freezer': 'Congelatore', 'Other': 'Altro', 'Min °C': 'Min °C', 'Max °C': 'Max °C',
     'Active': 'Attivo', 'Inactive': 'Non attivo', 'Edit': 'Modifica', 'Save': 'Salva', 'Start': 'Inizio', 'End': 'Fine', 'No fridges yet. Tap “Add fridge”.': 'Nessun frigo. Tocca “Aggiungi frigo”.',
     // admin rota
-    'Weekly rota': 'Piano turni settimanale', 'Copy previous week': 'Copia la settimana precedente', 'Add shift': 'Aggiungi turno',
+    'Weekly rota': 'Piano turni settimanale', 'Import timetable': 'Importa piano turni', 'Import weekly timetable': 'Importa piano turni settimanale', 'Week starts on Monday': 'La settimana inizia il lunedì', 'Back to rota': 'Torna al piano turni', 'Import shifts': 'Importa turni', 'Copy previous week': 'Copia la settimana precedente', 'Add shift': 'Aggiungi turno',
     'Tap a cell to add or remove a shift. Staff get an email reminder about an hour before.': 'Tocca una cella per aggiungere o togliere un turno. Il personale riceve un’email circa un’ora prima.',
     'Only the director can edit the rota.': 'Solo il direttore può modificare il piano turni.',
     // admin stock / orders
@@ -69,7 +69,7 @@
     [/^in (\d+) days$/, 'tra $1 giorni'], [/^(\d+) open$/, '$1 aperte'], [/^(\d+) box$/, '$1 cartoni'], [/^(.+) approved$/, '$1 approvate'], [/^saved by (.+)$/, 'salvato da $1'],
     [/^(-?[\d.]+)° to (-?[\d.]+)°C$/, '$1° / $2°C'], [/^Shift saved · (.+) ✓$/, 'Turno salvato · $1 ✓'], [/^(\d+) items updated ✓$/, 'Aggiornati $1 elementi ✓'],
     [/^Approve (\d+) pending shifts in this period\?$/, 'Approvare $1 turni in attesa in questo periodo?'], [/^Not checked yet for: (.+)$/, 'Allergeni non ancora verificati per: $1'],
-    [/^Check the temperature for (.+)$/, 'Controlla la temperatura di $1'], [/^Done: (.+)$/, 'Fatto: $1'],
+    [/^Check the temperature for (.+)$/, 'Controlla la temperatura di $1'], [/^Done: (.+)$/, 'Fatto: $1'], [/^Shelf life: (.+)$/, 'Conservazione: $1'],
   ];
   const one = s => { const k = s.trim(); if (D[k] !== undefined) return D[k]; for (const [re, to] of R) if (re.test(k)) return k.replace(re, to); return k; };
   const tr = s => { const k = s.trim(); if (D[k] !== undefined) return D[k]; return k.includes(' · ') ? k.split(' · ').map(one).join(' · ') : one(k); };

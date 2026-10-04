@@ -54,6 +54,15 @@
     'Add fridge': 'Aggiungi frigo', 'Edit fridge': 'Modifica frigo', 'Name': 'Nome', 'Type': 'Tipo', 'Fridge': 'Frigorifero', 'Freezer': 'Congelatore', 'Other': 'Altro', 'Min °C': 'Min °C', 'Max °C': 'Max °C',
     'Active': 'Attivo', 'Inactive': 'Non attivo', 'Edit': 'Modifica', 'Save': 'Salva', 'Start': 'Inizio', 'End': 'Fine', 'No fridges yet. Tap “Add fridge”.': 'Nessun frigo. Tocca “Aggiungi frigo”.',
     // admin rota
+    'Today': 'Oggi', 'Team today': 'Team di oggi', 'On shift now': 'In turno ora', 'Shifts today': 'Turni oggi', 'Temp. out of range': 'Temp. fuori range', 'Open stock alerts': 'Allerte scorte aperte', 'To approve': 'Da approvare',
+    'Off today': 'Assenti oggi', 'Now': 'Ora', 'Later': 'Dopo', 'Finished': 'Finito', 'Nobody is planned today': 'Nessuno in turno oggi', 'Deliveries & orders': 'Consegne e ordini', 'Nothing scheduled today': 'Niente in programma oggi',
+    'No events this week': 'Nessun evento questa settimana', 'Events this week': 'Eventi della settimana', 'Review hours →': 'Controlla ore →', 'Hours waiting for approval': 'Ore in attesa di approvazione', 'Nothing waiting for approval': 'Niente da approvare',
+    'No fridges set up yet': 'Nessun frigo configurato', 'Day · start': 'Giorno · inizio', 'Day · end': 'Giorno · fine', 'Night · start': 'Notte · inizio', 'Night · end': 'Notte · fine', '← Today': '← Oggi', 'Open order list →': 'Apri lista ordine →', 'Approve': 'Approva', 'Decline': 'Rifiuta', 'Cover': 'Sostituzione',
+    'Total': 'Totale', 'Days': 'Giorni', 'Times (tap one or more — two for a split shift)': 'Orari (tocca uno o più — due per il turno spezzato)', 'Other start': 'Altro inizio', 'Other end': 'Altra fine', '+ Add this time': '+ Aggiungi questo orario', 'Or mark as': 'Oppure segna come',
+    'Replace what is already planned on these days': 'Sostituisci ciò che è già pianificato in questi giorni', 'Already planned this week': 'Già pianificato questa settimana', 'Apply': 'Applica', 'Mon–Fri': 'Lun–Ven', 'Sat–Sun': 'Sab–Dom', 'All week': 'Tutta la settimana', 'Clear': 'Svuota',
+    'Rest': 'Riposo', 'Holiday': 'Ferie', 'Sick': 'Malattia', 'Leave': 'Permesso', 'Absent': 'Assente', 'Rest day': 'Giorno di riposo', 'Pick at least one day': 'Scegli almeno un giorno',
+    'Requests': 'Richieste', 'Request day off': 'Richiedi giorno libero', 'Ask a colleague to cover': 'Chiedi a un collega di sostituirti', 'Send request': 'Invia richiesta', 'Request sent ✓': 'Richiesta inviata ✓', 'Waiting for colleague': 'In attesa del collega', 'Waiting for manager': 'In attesa del manager',
+    'Declined': 'Rifiutata', 'Cancelled': 'Annullata', 'Accept': 'Accetta', 'To (optional)': 'A (facoltativo)', '🔔 Turn on phone notifications': '🔔 Attiva le notifiche sul telefono', 'Reason (optional)': 'Motivo (facoltativo)',
     'Weekly rota': 'Piano turni settimanale', 'Import timetable': 'Importa piano turni', 'Import weekly timetable': 'Importa piano turni settimanale', 'Week starts on Monday': 'La settimana inizia il lunedì', 'Back to rota': 'Torna al piano turni', 'Import shifts': 'Importa turni', 'Copy previous week': 'Copia la settimana precedente', 'Add shift': 'Aggiungi turno',
     'Tap a cell to add or remove a shift. Staff get an email reminder about an hour before.': 'Tocca una cella per aggiungere o togliere un turno. Il personale riceve un’email circa un’ora prima.',
     'Only the director can edit the rota.': 'Solo il direttore può modificare il piano turni.',
@@ -69,7 +78,7 @@
     [/^in (\d+) days$/, 'tra $1 giorni'], [/^(\d+) open$/, '$1 aperte'], [/^(\d+) box$/, '$1 cartoni'], [/^(.+) approved$/, '$1 approvate'], [/^saved by (.+)$/, 'salvato da $1'],
     [/^(-?[\d.]+)° to (-?[\d.]+)°C$/, '$1° / $2°C'], [/^Shift saved · (.+) ✓$/, 'Turno salvato · $1 ✓'], [/^(\d+) items updated ✓$/, 'Aggiornati $1 elementi ✓'],
     [/^Approve (\d+) pending shifts in this period\?$/, 'Approvare $1 turni in attesa in questo periodo?'], [/^Not checked yet for: (.+)$/, 'Allergeni non ancora verificati per: $1'],
-    [/^Check the temperature for (.+)$/, 'Controlla la temperatura di $1'], [/^Done: (.+)$/, 'Fatto: $1'], [/^Shelf life: (.+)$/, 'Conservazione: $1'],
+    [/^Check the temperature for (.+)$/, 'Controlla la temperatura di $1'], [/^Done: (.+)$/, 'Fatto: $1'], [/^Cover: (.+)$/, 'Sostituzione: $1'], [/^(.+) asks you to cover$/, '$1 ti chiede di sostituirlo/a'], [/^Shelf life: (.+)$/, 'Conservazione: $1'],
   ];
   const one = s => { const k = s.trim(); if (D[k] !== undefined) return D[k]; for (const [re, to] of R) if (re.test(k)) return k.replace(re, to); return k; };
   const tr = s => { const k = s.trim(); if (D[k] !== undefined) return D[k]; return k.includes(' · ') ? k.split(' · ').map(one).join(' · ') : one(k); };

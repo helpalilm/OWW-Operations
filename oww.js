@@ -3,6 +3,8 @@ const OWW = {
   // Paste your Apps Script Web App URL here (the one ending in /exec). It is the only place it lives.
   URL: 'https://script.google.com/macros/s/AKfycbzLCnRPV3gfH_sKgSXn_t_PDshZ3-Yiu5gH3t87jNuJVHuS6HmxQ6BrQ3ZMujES8ZWy/exec',
   tk: null, user: null, hooks: {},
+  // Phone notifications (OneSignal, free plan). Paste your OneSignal App ID here to switch them on; leave empty = off.
+  PUSH_APP_ID: '',
   $: id => document.getElementById(id),
   esc: s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])),
 };
@@ -63,7 +65,7 @@ OWW.start = cfg => {
   const enter = (tk, user) => {
     if (cfg.allow && !cfg.allow.includes(user.role)) throw new Error('This app is for managers and directors only');
     OWW.tk = tk; OWW.user = user; L.classList.add('hide'); OWW.$('app').classList.remove('hide');
-    localStorage.setItem('oww_s', JSON.stringify({ tk, user })); cfg.ready(user); OWW.flush();
+    localStorage.setItem('oww_s', JSON.stringify({ tk, user })); cfg.ready(user); OWW.flush(); OWW.push.init();
   };
   OWW.$('em').value = localStorage.getItem('oww_email') || '';
   OWW.$('lf').onsubmit = async e => {
@@ -89,6 +91,7 @@ OWW.account = el => {
       <input id="pn" type="password" placeholder="New password (8+ characters)" autocomplete="new-password">
       <button class="btn p" onclick="OWW.changePw()">Save password</button></div>
     <div class="row"><span class="grow">Language / Lingua</span>${OWW.langBar ? OWW.langBar() : ''}</div>
+    ${OWW.PUSH_APP_ID ? '<div class="row"><button class="btn w" onclick="OWW.push.enable()">🔔 Turn on phone notifications</button></div>' : ''}
     <div class="row"><button class="btn w" onclick="OWW.logout()" style="color:var(--red)">Sign out</button></div></div></div>`;
 };
 OWW.changePw = async () => {
@@ -123,3 +126,23 @@ OWW.finder = (inp, pop, items, pick) => {
 
 // service worker = required for "Install app"
 if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+
+// ── phone notifications via OneSignal (needs PUSH_APP_ID; on iPhone the app must be installed to the Home Screen, iOS 16.4+) ──
+OWW.push = {
+  init() {
+    if (!OWW.PUSH_APP_ID || OWW._pi) return; OWW._pi = 1;
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    const s = document.createElement('script'); s.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js'; s.defer = true; document.head.appendChild(s);
+    OneSignalDeferred.push(async OS => {
+      await OS.init({ appId: OWW.PUSH_APP_ID, serviceWorkerPath: 'sw.js', serviceWorkerParam: { scope: location.pathname.replace(/[^/]*$/, '') }, notifyButton: { enable: false } });
+      if (OWW.user) OS.login(OWW.user.id); // links this phone to the person, so the server can target them
+    });
+  },
+  enable() {
+    if (!window.OneSignalDeferred) OWW.push.init();
+    OneSignalDeferred.push(async OS => {
+      try { await OS.Notifications.requestPermission(); await OS.login(OWW.user.id); OWW.toast(OS.Notifications.permission ? 'Notifications on ✓' : 'Notifications are blocked in your phone settings', OS.Notifications.permission ? 'green' : 'amber'); }
+      catch (e) { OWW.toast('Could not turn on notifications', 'red'); }
+    });
+  }
+};

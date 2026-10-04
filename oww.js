@@ -57,15 +57,16 @@ OWW.logout = () => { localStorage.removeItem('oww_s'); location.reload(); };
 
 // cfg: { title, sub, allow:[roles], ready(user) }
 OWW.start = cfg => {
+  OWW.switchCfg = cfg.switchTo; // where the Director can jump to (set per app)
   const L = OWW.$('login');
   L.innerHTML = `<form id="lf" novalidate><img src="logo.png" alt="Old Wild West" style="width:124px;height:124px;margin:0 auto 2px"><h1>${cfg.title}</h1><p>${cfg.sub}</p><div style="text-align:center">${OWW.langBar ? OWW.langBar() : ''}</div>
     <input id="em" type="email" placeholder="Email" autocomplete="username" autocapitalize="none" required>
     <input id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
-    <div class="err" id="le" role="alert"></div><button class="btn p w" id="lb">Sign in</button>${cfg.other ? `<a class="btn w" href="${cfg.other.href}" style="text-decoration:none">${cfg.other.label}</a>` : ''}</form>`;
+    <div class="err" id="le" role="alert"></div><button class="btn p w" id="lb">Sign in</button></form>`;
   const enter = (tk, user) => {
     if (cfg.allow && !cfg.allow.includes(user.role)) throw new Error('This app is for managers and directors only');
     OWW.tk = tk; OWW.user = user; L.classList.add('hide'); OWW.$('app').classList.remove('hide');
-    localStorage.setItem('oww_s', JSON.stringify({ tk, user })); cfg.ready(user); OWW.flush(); OWW.push.init();
+    localStorage.setItem('oww_s', JSON.stringify({ tk, user })); cfg.ready(user); OWW.flush(); OWW.push.init(); OWW.addSwitch();
   };
   OWW.$('em').value = localStorage.getItem('oww_email') || '';
   OWW.$('lf').onsubmit = async e => {
@@ -92,6 +93,7 @@ OWW.account = el => {
       <button class="btn p" onclick="OWW.changePw()">Save password</button></div>
     <div class="row"><span class="grow">Language / Lingua</span>${OWW.langBar ? OWW.langBar() : ''}</div>
     ${OWW.PUSH_APP_ID ? '<div class="row"><button class="btn w" onclick="OWW.push.enable()">🔔 Turn on phone notifications</button></div>' : ''}
+    ${OWW.switchCfg && u.role === 'Director' ? `<div class="row"><button class="btn w" onclick="OWW.goApp()"><span aria-hidden="true">⇄ </span>${OWW.esc(OWW.switchCfg.label)}</button></div>` : ''}
     <div class="row"><button class="btn w" onclick="OWW.logout()" style="color:var(--red)">Sign out</button></div></div></div>`;
 };
 OWW.changePw = async () => {
@@ -145,4 +147,13 @@ OWW.push = {
       catch (e) { OWW.toast('Could not turn on notifications', 'red'); }
     });
   }
+};
+
+// ── switching between Kitchen and Admin: Director only. Everyone else never sees it, and the action does nothing for them. ──
+OWW.goApp = () => { if (OWW.user && OWW.user.role === 'Director' && OWW.switchCfg) location.href = OWW.switchCfg.href; };
+OWW.addSwitch = () => {
+  const u = OWW.user, c = OWW.switchCfg, rf = OWW.$('rf');
+  if (!c || !u || u.role !== 'Director' || !rf || OWW.$('swb')) return;
+  const b = document.createElement('button'); b.id = 'swb'; b.className = 'sm a swb';
+  b.innerHTML = '<span aria-hidden="true">⇄ </span>' + OWW.esc(c.label); b.onclick = OWW.goApp; rf.before(b);
 };

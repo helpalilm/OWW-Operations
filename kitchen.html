@@ -71,6 +71,7 @@
       <div id="a-log"><div class="cols"><div class="card" style="padding:14px;display:grid;gap:12px">
         <label class="fld"><small>Date</small><input type="date" id="ad"></label>
         <div class="two"><label class="fld"><small>Start time</small><input type="time" id="as"></label><label class="fld"><small>End time</small><input type="time" id="ae"></label></div>
+        <div class="two"><button class="sm" type="button" onclick="nowT('as')">Start = now</button><button class="sm" type="button" onclick="nowT('ae')">End = now</button></div>
         <div class="dur" id="adur"></div>
         <label class="fld"><small>Note (optional)</small><input id="am" placeholder="e.g. covered the grill" maxlength="120"></label>
         <button class="btn p w" id="asave" onclick="saveShift()">Save shift</button></div></div></div>
@@ -110,7 +111,7 @@ document.querySelectorAll('#shiftseg button').forEach(b => b.onclick = () => { s
 function paintShift() { document.querySelectorAll('#shiftseg button').forEach(b => b.classList.toggle('on', b.dataset.s === shift)); }
 
 OWW.start({
-  title: 'OWW Kitchen', sub: 'Sign in with your work email',
+  title: 'OWW Kitchen', sub: 'Sign in with your work email', other: { label: 'Admin login', href: 'inventory.html' },
   ready(u) {
     $('sub').textContent = new Date().toLocaleDateString(OWW.loc(), { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' + u.name;
     paintShift(); OWW.account('acct'); $('ad').value = OWW.ymd(new Date());
@@ -244,12 +245,22 @@ function checkShift(date, st, en) {
 async function saveShift() {
   const date = $('ad').value, start = $('as').value, end = $('ae').value, memo = $('am').value.trim(), bad = checkShift(date, start, end);
   if (bad) return OWW.toast(bad, 'red');
+  const d = dev(date, start, end), g = A.grace ?? 5;
+  if (d && (d.late > g || d.early > g)) return reasonSheet(devText(d), r => commitShift(date, start, end, memo, r, d)); // late / early: ask why first
+  commitShift(date, start, end, memo, '', d);
+}
+async function commitShift(date, start, end, memo, reason, d) {
   let m = toM(end) - toM(start); if (m <= 0) m += 1440;
-  const t = { id: 'tmp' + Date.now(), date, start, end, memo, hours: Math.round(m / 60 * 100) / 100, pending: true };
+  const t = { id: 'tmp' + Date.now(), date, start, end, memo, reason, late: d ? d.late : 0, early: d ? d.early : 0, hours: Math.round(m / 60 * 100) / 100, pending: true };
   A.shifts.push(t); A.shifts.sort((x, y) => x.date === y.date ? y.start.localeCompare(x.start) : y.date.localeCompare(x.date));
   $('as').value = $('ae').value = $('am').value = ''; durUpdate(); renderAtt(); OWW.toast('Shift saved ✓'); // shown instantly
-  try { const r = await OWW.send('shiftLog', { date, start, end, memo }); if (r) { t.id = r.id; delete t.pending; renderAtt(); localStorage.setItem(akey(), JSON.stringify(A)); } }
-  catch (e) { A.shifts = A.shifts.filter(x => x !== t); renderAtt(); $('as').value = start; $('ae').value = end; $('am').value = memo; durUpdate(); OWW.toast(e.message, 'red'); }
+  try { const r = await OWW.send('shiftLog', { date, start, end, memo, reason }); if (r) { t.id = r.id; t.late = r.late; t.early = r.early; delete t.pending; renderAtt(); localStorage.setItem(akey(), JSON.stringify(A)); } }
+  catch (e) {
+    A.shifts = A.shifts.filter(x => x !== t); renderAtt();
+    const q = /^REASON_REQUIRED:(\d+):(\d+)$/.exec(e.message); // the server found a late / early leave that the phone could not see (e.g. a past day)
+    if (q) return reasonSheet(devText({ late: +q[1], early: +q[2] }), r => commitShift(date, start, end, memo, r, d));
+    $('as').value = start; $('ae').value = end; $('am').value = memo; durUpdate(); OWW.toast(e.message, 'red');
+  }
 }
 function stats() {
   const d = new Date(), mon = new Date(d.getFullYear(), d.getMonth(), d.getDate() - (d.getDay() + 6) % 7), prev = new Date(mon); prev.setDate(mon.getDate() - 7);
@@ -260,12 +271,12 @@ function stats() {
 function renderAtt() {
   renderRota();
   const s = stats();
-  $('astats').innerHTML = [['This week', OWW.hrs(s.week)], ['Last week', OWW.hrs(s.last)], ['This month', OWW.hrs(s.month)], ['Days this month', s.days]]
+  $('astats').innerHTML = [['This week', OWW.hrs(s.week)], ['Last week', OWW.hrs(s.last)], ['This month', OWW.hrs(s.month)], ['Days this month', s.days], ['Late this month', lateN()]]
     .map(x => `<div class="stat"><small>${x[0]}</small><b style="font-size:21px">${x[1]}</b></div>`).join('');
   const f = $('af').value, l = A.shifts.filter(x => !f || x.date === f), g = {};
   l.forEach(x => (g[x.date] = g[x.date] || []).push(x));
   $('alist').innerHTML = Object.keys(g).length ? Object.keys(g).map(d => `<div class="sec">${OWW.day(d)}</div><div class="card">` + g[d].map(x =>
-    `<div class="row"><span class="tag b">${OWW.kind(x.start)}</span><div class="grow"><div class="nm">${esc(x.start)} → ${esc(x.end)}</div>${x.memo ? `<div class="sub">${esc(x.memo)}</div>` : ''}</div>${stTag(x)}<b>${OWW.hrs(x.hours)}</b></div>`).join('') + '</div>').join('')
+    `<div class="row"><span class="tag b">${OWW.kind(x.start)}</span><div class="grow"><div class="nm">${esc(x.start)} → ${esc(x.end)}</div>${x.memo ? `<div class="sub">${esc(x.memo)}</div>` : ''}</div>${pTags(x)}${stTag(x)}<b>${OWW.hrs(x.hours)}</b></div>`).join('') + '</div>').join('')
     : '<div class="empty">No shifts logged' + (f ? ' on this date' : ' yet') + '</div>';
 }
 async function refresh() {

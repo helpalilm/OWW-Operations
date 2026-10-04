@@ -58,9 +58,12 @@ async function saveFridge(id) {
   catch (e) { $('fer').textContent = e.message; }
 }
 
-// ── weekly rota ──
+// ── weekly rota: quick-add planner + totals + absences ──
 const addd = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
-let RM = (() => { const x = new Date(); x.setHours(12); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return x; })(), RD = { rows: [], users: [] };
+const tmin = t => parseInt(t) * 60 + parseInt(t.split(':')[1]);
+const hrsOf = r => { let m = tmin(r.end) - tmin(r.start); if (m <= 0) m += 1440; return m / 60; };
+const ABS = { REST: ['Rest', 'o'], HOLIDAY: ['Holiday', 'h'], SICK: ['Sick', 's'], LEAVE: ['Leave', 'o'], ABSENT: ['Absent', 's'] };
+let RM = (() => { const x = new Date(); x.setHours(12); x.setDate(x.getDate() - (x.getDay() + 6) % 7); return x; })(), RD = { rows: [], users: [], presets: [] }, PQ = null;
 OWW.hooks['p-rota'] = () => loadRota();
 async function loadRota() { try { RD = await OWW.api('rotaWeek', { from: OWW.ymd(RM) }); } catch (e) { return OWW.toast(e.message, 'red'); } renderRota(); }
 function wk(n) { RM = addd(RM, 7 * n); loadRota(); }
@@ -68,28 +71,56 @@ function renderRota() {
   const days = [0, 1, 2, 3, 4, 5, 6].map(i => addd(RM, i)), dir = OWW.user.role === 'Director', t = OWW.ymd(new Date()), f = (d, o) => d.toLocaleDateString(OWW.loc(), o);
   $('wlab').textContent = f(days[0], { day: 'numeric', month: 'short' }) + ' – ' + f(days[6], { day: 'numeric', month: 'short', year: 'numeric' });
   $('rbar').classList.toggle('hide', !dir);
-  $('rnote').textContent = dir ? 'Tap a cell to add or remove a shift. Staff get an email reminder about an hour before.' : 'Only the director can edit the rota.';
-  $('rtab').innerHTML = '<table class="rt"><tr><th>Staff</th>' + days.map(d => `<th${OWW.ymd(d) === t ? ' style="color:var(--amber)"' : ''}>${f(d, { weekday: 'short' })}<br>${d.getDate()}</th>`).join('') + '</tr>' +
-    RD.users.map(u => `<tr><td><b>${esc(u.full)}</b><br><span class="sub">${esc(u.role)}</span></td>` + days.map(d => { const ds = OWW.ymd(d), l = RD.rows.filter(r => r.uid === u.id && r.date === ds);
-      return `<td class="c" data-u="${esc(u.id)}" data-d="${ds}">${l.map(r => `<span class="chipx">${esc(r.start)}–${esc(r.end)}</span>`).join('')}</td>`; }).join('') + '</tr>').join('') + '</table>';
+  $('rnote').textContent = dir ? 'Tap a name or a day to plan shifts. Staff get a phone notification (and email) about an hour before.' : 'Only the director can edit the rota.';
+  const dayTot = days.map(() => 0); let grand = 0;
+  const rows = RD.users.map(u => { let tot = 0;
+    const cells = days.map((d, k) => { const ds = OWW.ymd(d), l = RD.rows.filter(r => r.uid === u.id && r.date === ds);
+      l.forEach(r => { if (r.type === 'SHIFT') { const h = hrsOf(r); tot += h; dayTot[k] += h; } });
+      return `<td class="c" data-u="${esc(u.id)}" data-d="${ds}">${l.map(r => r.type === 'SHIFT' ? `<span class="chipx">${esc(r.start)}–${esc(r.end)}</span>` : `<span class="chipx ${ABS[r.type][1]}">${ABS[r.type][0]}</span>`).join('')}</td>`; }).join('');
+    grand += tot;
+    return `<tr><td class="c" data-u="${esc(u.id)}"><b>${esc(u.full)}</b><br><span class="sub">${esc(u.role)}</span></td>${cells}<td><b>${OWW.hrs(tot)}</b></td></tr>`; }).join('');
+  $('rtab').innerHTML = '<table class="rt"><tr><th>Staff</th>' + days.map(d => `<th${OWW.ymd(d) === t ? ' style="color:var(--amber)"' : ''}>${f(d, { weekday: 'short' })}<br>${d.getDate()}</th>`).join('') + '<th>Total</th></tr>' + rows +
+    '<tr><td><b>Total</b></td>' + dayTot.map(h => `<td>${h ? OWW.hrs(h) : ''}</td>`).join('') + `<td><b>${OWW.hrs(grand)}</b></td></tr></table>`;
 }
-$('rtab').onclick = e => { const c = e.target.closest('[data-u]'); if (c && OWW.user.role === 'Director') cellForm(c.dataset.u, c.dataset.d); };
-function cellForm(uid, ds) {
-  const u = RD.users.find(x => x.id === uid), l = RD.rows.filter(r => r.uid === uid && r.date === ds);
-  OWW.sheet(`<div><div class="nm" style="font-size:18px">${esc(u.full)}</div><div class="sub">${OWW.day(ds)}</div></div>
-    ${l.map(r => `<div class="row" style="padding:0"><span class="grow nm">${esc(r.start)} → ${esc(r.end)}${r.note ? ' · ' + esc(r.note) : ''}</span><button class="sm" aria-label="Delete" onclick="rotaDel('${esc(r.id)}')">✕</button></div>`).join('')}
-    <div class="two"><label class="fld"><small>Start time</small><input type="time" id="rs"></label><label class="fld"><small>End time</small><input type="time" id="re"></label></div>
-    <input id="rn" placeholder="Note (optional)" maxlength="80"><div class="err" id="rer"></div>
-    <button class="btn p w" onclick="rotaAdd('${esc(uid)}','${ds}')">Add shift</button><button class="btn w" onclick="OWW.close()">Close</button>`);
+$('rtab').onclick = e => { const c = e.target.closest('[data-u]'); if (c && OWW.user.role === 'Director') planForm(c.dataset.u, c.dataset.d); };
+function planForm(uid, ds) { PQ = { uid, days: new Set(ds ? [ds] : []), rng: new Set(), off: '', replace: true, cs: '', ce: '' }; drawPlan(); }
+function drawPlan() {
+  const u = RD.users.find(x => x.id === PQ.uid), days = [0, 1, 2, 3, 4, 5, 6].map(i => addd(RM, i)), mine = RD.rows.filter(r => r.uid === PQ.uid), f = (d, o) => d.toLocaleDateString(OWW.loc(), o);
+  const pre = RD.presets || [], extra = [...PQ.rng].filter(p => !pre.includes(p)), tag = p => `<button class="chip ${PQ.rng.has(p) ? 'on' : ''}" data-qr="${p}">${p.replace('-', ' - ')}</button>`;
+  OWW.sheet(`<div><div class="nm" style="font-size:18px">${esc(u.full)}</div><div class="sub">${f(days[0], { day: 'numeric', month: 'short' })} – ${f(days[6], { day: 'numeric', month: 'short' })}</div></div>
+    <div><div class="sub" style="margin-bottom:6px">Days</div><div class="chips" style="padding:0">${days.map(d => `<button class="chip ${PQ.days.has(OWW.ymd(d)) ? 'on' : ''}" data-qd="${OWW.ymd(d)}">${f(d, { weekday: 'short' })} ${d.getDate()}</button>`).join('')}</div>
+      <div class="chips" style="padding:6px 0 0"><button class="chip" data-qq="wd">Mon–Fri</button><button class="chip" data-qq="we">Sat–Sun</button><button class="chip" data-qq="all">All week</button><button class="chip" data-qq="none">Clear</button></div></div>
+    <div><div class="sub" style="margin-bottom:6px">Times (tap one or more — two for a split shift)</div><div class="chips" style="padding:0">${pre.map(tag).join('')}${extra.map(tag).join('')}</div>
+      <div class="two" style="margin-top:8px"><label class="fld"><small>Other start</small><input type="time" id="qs" value="${PQ.cs}"></label><label class="fld"><small>Other end</small><input type="time" id="qe" value="${PQ.ce}"></label></div>
+      <button class="sm a" style="margin-top:6px" data-qq="addr">+ Add this time</button></div>
+    <div><div class="sub" style="margin-bottom:6px">Or mark as</div><div class="chips" style="padding:0">${['REST', 'HOLIDAY', 'SICK'].map(k => `<button class="chip ${PQ.off === k ? 'on' : ''}" data-qo="${k}">${ABS[k][0]}</button>`).join('')}</div></div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" id="qrep" ${PQ.replace ? 'checked' : ''} style="width:auto"> Replace what is already planned on these days</label>
+    ${mine.length ? `<div><div class="sub" style="margin-bottom:4px">Already planned this week</div>${mine.map(r => `<div class="row" style="padding:4px 0;min-height:0"><span class="grow">${OWW.day(r.date)} · ${r.type === 'SHIFT' ? esc(r.start) + ' → ' + esc(r.end) : ABS[r.type][0]}</span><button class="sm" aria-label="Delete" onclick="rotaDel('${esc(r.id)}',true)">✕</button></div>`).join('')}</div>` : ''}
+    <div class="err" id="qer"></div><button class="btn p w" onclick="planApply()">Apply</button><button class="btn w" onclick="OWW.close()">Close</button>`);
 }
-async function rotaAdd(uid, ds) {
-  try { await OWW.api('rotaSave', { userId: uid, date: ds, start: $('rs').value, end: $('re').value, note: $('rn').value.trim() }); OWW.close(); await loadRota(); }
-  catch (e) { $('rer').textContent = e.message; }
+$('sheetc').onclick = e => {
+  if (!PQ || !$('sheet').classList.contains('on')) return; const b = e.target.closest('[data-qd],[data-qq],[data-qr],[data-qo]'); if (!b) return; const D = b.dataset;
+  if (D.qd) { PQ.days.has(D.qd) ? PQ.days.delete(D.qd) : PQ.days.add(D.qd); }
+  else if (D.qr) { PQ.off = ''; PQ.rng.has(D.qr) ? PQ.rng.delete(D.qr) : PQ.rng.add(D.qr); }
+  else if (D.qo) { PQ.off = PQ.off === D.qo ? '' : D.qo; if (PQ.off) PQ.rng.clear(); }
+  else if (D.qq === 'addr') { if (PQ.cs && PQ.ce && PQ.cs !== PQ.ce) { PQ.rng.add(PQ.cs + '-' + PQ.ce); PQ.off = ''; PQ.cs = PQ.ce = ''; } else return; }
+  else { const ds = [0, 1, 2, 3, 4, 5, 6].map(i => OWW.ymd(addd(RM, i))); PQ.days = new Set(D.qq === 'wd' ? ds.slice(0, 5) : D.qq === 'we' ? ds.slice(5) : D.qq === 'all' ? ds : []); }
+  drawPlan();
+};
+$('sheetc').oninput = e => { if (!PQ) return; if (e.target.id === 'qs') PQ.cs = e.target.value; if (e.target.id === 'qe') PQ.ce = e.target.value; if (e.target.id === 'qrep') PQ.replace = e.target.checked; };
+async function planApply() {
+  const days = [...PQ.days].sort(), items = [];
+  if (!days.length) { $('qer').textContent = 'Pick at least one day'; return; }
+  if (PQ.off) days.forEach(d => items.push({ userId: PQ.uid, date: d, type: PQ.off }));
+  else { if (!PQ.rng.size) { $('qer').textContent = 'Pick a time, or mark the days as rest / holiday / sick'; return; }
+    days.forEach(d => PQ.rng.forEach(r => { const [a, b] = r.split('-'); items.push({ userId: PQ.uid, date: d, start: a, end: b }); })); }
+  try { const r = await OWW.api('rotaImport', { from: OWW.ymd(RM), items, replace: PQ.replace, dates: days }); OWW.close(); OWW.toast(r.added + ' added' + (r.removed ? ' · ' + r.removed + ' replaced' : '') + ' ✓'); await loadRota(); }
+  catch (e) { $('qer').textContent = e.message; }
 }
-async function rotaDel(id) { try { await OWW.api('rotaDelete', { id }); OWW.close(); await loadRota(); } catch (e) { OWW.toast(e.message, 'red'); } }
+async function rotaDel(id, again) { try { await OWW.api('rotaDelete', { id }); await loadRota(); if (again && PQ) drawPlan(); else OWW.close(); } catch (e) { OWW.toast(e.message, 'red'); } }
 async function copyWeek() {
   if (!confirm('Copy the previous week into this week?')) return;
-  try { const n = await OWW.api('rotaCopy', { from: OWW.ymd(addd(RM, -7)), to: OWW.ymd(RM) }); OWW.toast(n + ' shifts copied ✓'); await loadRota(); } catch (e) { OWW.toast(e.message, 'red'); }
+  try { const n = await OWW.api('rotaCopy', { from: OWW.ymd(addd(RM, -7)), to: OWW.ymd(RM) }); OWW.toast(n + ' entries copied ✓'); await loadRota(); } catch (e) { OWW.toast(e.message, 'red'); }
 }
 
 // ── rota import: Excel / CSV / photo → review → one request ──
@@ -194,10 +225,41 @@ $('rrev').onchange = e => { const i = e.target.dataset.ri; if (i !== undefined) 
 $('rrev').oninput = e => { const p = e.target.dataset.rc; if (!p) return; const [i, k] = p.split(':'); RR[i].cells[k] = e.target.value; e.target.style.borderColor = segs(e.target.value).bad ? 'var(--red)' : ''; };
 async function rimpApply() {
   const base = monOf($('rwk').value), items = []; let ppl = 0;
-  RR.forEach(r => { if (!r.uid) return; let n = 0; r.cells.forEach((c, k) => segs(c).segs.forEach(s => { items.push({ userId: r.uid, date: OWW.ymd(addd(base, k)), start: s[0], end: s[1] }); n++; })); if (n) ppl++; });
+  const offType = t => { const w = lettersOf(t); return /ferie/.test(w) ? 'HOLIDAY' : /infort|malat/.test(w) ? 'SICK' : /perm/.test(w) ? 'LEAVE' : /assent/.test(w) ? 'ABSENT' : 'REST'; };
+  RR.forEach(r => { if (!r.uid) return; let n = 0; r.cells.forEach((c, k) => { const p = segs(c), date = OWW.ymd(addd(base, k));
+    p.segs.forEach(s => { items.push({ userId: r.uid, date, start: s[0], end: s[1] }); n++; }); if (p.off) { items.push({ userId: r.uid, date, type: offType(p.off) }); n++; } }); if (n) ppl++; });
   if (!items.length) return OWW.toast('Nothing to import yet. Choose a person for each row.', 'amber');
   if (RR.some(r => r.uid && r.cells.some(c => segs(c).bad)) && !confirm('Some cells (red) could not be read and will be skipped. Continue?')) return;
-  if (!confirm('Import ' + items.length + ' shifts for ' + ppl + ' people for the week starting ' + OWW.ymd(base) + '?\nExisting shifts of these people in that week are replaced.')) return;
-  try { const r = await OWW.api('rotaImport', { from: OWW.ymd(base), items, replace: true }); OWW.toast(r.added + ' shifts imported ✓'); RM = base; RR = []; $('rfile').value = ''; OWW.go('p-rota'); }
+  if (!confirm('Import ' + items.length + ' entries (shifts, rest days, holidays, sick) for ' + ppl + ' people for the week starting ' + OWW.ymd(base) + '?\nExisting shifts of these people in that week are replaced.')) return;
+  try { const r = await OWW.api('rotaImport', { from: OWW.ymd(base), items, replace: true }); OWW.toast(r.added + ' entries imported ✓'); RM = base; RR = []; $('rfile').value = ''; OWW.go('p-rota'); }
   catch (e) { OWW.toast(e.message, 'red'); }
+}
+
+// ── Today screen ──
+let TD = null;
+OWW.hooks['p-today'] = () => loadToday();
+async function loadToday() { try { TD = await OWW.api('today'); } catch (e) { return OWW.toast(e.message, 'red'); } renderToday(); }
+async function decideReq(id, ok) {
+  let note = ''; if (!ok) { note = prompt('Reason (optional)'); if (note === null) return; }
+  try { await OWW.api('reqDecide', { id, approve: ok, note }); OWW.toast(ok ? 'Approved ✓' : 'Declined'); await loadToday(); } catch (e) { OWW.toast(e.message, 'red'); }
+}
+function renderToday() {
+  const d = TD, t = d.temps, st = { now: ['g', 'Now'], upcoming: ['a', 'Later'], done: ['', 'Finished'] }, none = x => `<div class="empty">${x}</div>`;
+  const nowN = d.team.filter(x => x.state === 'now').length, pend = d.requests.length + d.hoursPending;
+  $('tdate').textContent = OWW.day(d.date);
+  $('tstats').innerHTML = [['On shift now', nowN, ''], ['Shifts today', d.team.length, ''], ['Temp. out of range', t.bad.length, t.bad.length ? 'var(--red)' : ''], ['Open stock alerts', d.alerts.length, d.alerts.length ? 'var(--amber)' : ''], ['To approve', pend, pend ? 'var(--amber)' : '']]
+    .map(s => `<div class="stat"><small>${s[0]}</small><b style="color:${s[2] || 'inherit'}">${s[1]}</b></div>`).join('');
+  $('tteam').innerHTML = (d.team.length ? d.team.map(x => `<div class="row"><div class="grow"><div class="nm">${esc(x.name)}</div><div class="sub">${esc(x.start)} → ${esc(x.end)}</div></div><span class="tag ${st[x.state][0]}">${st[x.state][1]}</span></div>`).join('') : none('Nobody is planned today'))
+    + (d.off.length ? `<div class="row"><div class="grow"><div class="sub">Off today</div><div class="nm" style="font-size:13px">${d.off.map(o => esc(o.name) + ' (' + (ABS[o.type] || [o.type])[0] + ')').join(', ')}</div></div></div>` : '');
+  const tl = (k, label) => `<div class="row"><span class="grow">${label}</span><span class="tag ${t.fridges && t.n[k] >= t.fridges ? 'g' : 'a'}">${t.n[k]}/${t.fridges}</span></div>`;
+  $('ttemp').innerHTML = t.fridges ? tl('DayStart', 'Day · start') + tl('DayEnd', 'Day · end') + tl('NightStart', 'Night · start') + tl('NightEnd', 'Night · end') + t.bad.map(b => `<div class="row"><span class="tag r">Out of range</span><span class="grow">${esc(b)}</span></div>`).join('') : none('No fridges set up yet');
+  $('troutine').innerHTML = (d.routine.length ? d.routine.map(r => `<div class="row"><span class="tag b">Today</span><span class="grow nm">${esc(r)}</span></div>`).join('') : none('Nothing scheduled today'))
+    + (d.lastDelivery ? `<div class="row"><span class="sub">Last delivery received: ${esc(d.lastDelivery)}</span></div>` : '');
+  $('treq').innerHTML = (d.requests.length ? d.requests.map(r => `<div class="row" style="flex-wrap:wrap"><div class="grow"><div class="nm">${esc(r.name)}${r.type === 'SWAP' ? ' → ' + esc(r.peerName) : ''}</div>
+      <div class="sub">${r.type === 'SWAP' ? 'Cover' : (ABS[r.kind] || [r.kind])[0]} · ${OWW.day(r.from)}${r.to && r.to !== r.from ? ' → ' + OWW.day(r.to) : ''}${r.shift ? ' · ' + esc(r.shift) : ''}${r.note ? ' · ' + esc(r.note) : ''}</div></div>
+      <button class="sm g" onclick="decideReq('${esc(r.id)}',true)">Approve</button><button class="sm" onclick="decideReq('${esc(r.id)}',false)">Decline</button></div>`).join('') : '')
+    + (d.hoursPending ? `<div class="row"><div class="grow"><div class="nm">${d.hoursPending} shifts</div><div class="sub">Hours waiting for approval</div></div><button class="sm a" onclick="OWW.go('p-dash')">Review hours →</button></div>` : '')
+    + (!d.requests.length && !d.hoursPending ? none('Nothing waiting for approval') : '');
+  $('talerts').innerHTML = d.alerts.length ? d.alerts.slice(0, 8).map(a => `<div class="row"><div class="grow"><div class="nm">${esc(a.item)}</div><div class="sub">${esc(a.qty)} · ${esc(a.by)} · ${esc(a.date)}</div></div></div>`).join('') + `<div class="row"><button class="sm a" onclick="OWW.go('p-order')">Open order list →</button></div>` : none('No open alerts');
+  $('tevents').innerHTML = d.events.length ? d.events.map(e => `<div class="row"><div class="grow"><div class="nm">${esc(e.title)}</div><div class="sub">${OWW.day(e.date)}${e.time ? ' · ' + esc(e.time) : ''}${e.notes ? ' · ' + esc(e.notes) : ''}</div></div></div>`).join('') : none('No events this week');
 }

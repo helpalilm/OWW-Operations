@@ -28,7 +28,8 @@
       <div class="cols">
         <div><div class="sec">Team today</div><div class="card" id="tteam"></div>
           <div class="sec">Fridge temperatures</div><div class="card" id="ttemp"></div>
-          <div class="sec">Deliveries &amp; orders</div><div class="card" id="troutine"></div></div>
+          <div class="sec">Deliveries &amp; orders</div><div class="card" id="troutine"></div>
+          <div class="sec">Punctuality</div><div class="card" id="tpunct"></div></div>
         <div><div class="sec">To approve</div><div class="card" id="treq"></div>
           <div class="sec">Open stock alerts</div><div class="card" id="talerts"></div>
           <div class="sec">Events this week</div><div class="card" id="tevents"></div></div>
@@ -149,7 +150,7 @@ let D = { inv: [], order: [], alerts: [], users: [] }, filt = 'ALL', del = {};
 document.querySelectorAll('.nb').forEach(b => b.onclick = () => OWW.go(b.dataset.p));
 
 OWW.start({
-  title: 'OWW Admin', sub: 'Managers & directors only', allow: ['Kitchen Manager', 'Director'],
+  title: 'OWW Admin', sub: 'Managers & directors only', other: { label: 'Kitchen login', href: 'kitchen.html' }, allow: ['Kitchen Manager', 'Director'],
   ready(u) { $('sub').textContent = u.name + ' · ' + u.role; OWW.account('acct'); $('dir').classList.toggle('hide', u.role !== 'Director'); load(); setP('week'); loadEvents(); loadH(); loadToday(); }
 });
 

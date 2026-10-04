@@ -79,3 +79,5 @@ svg{display:block;flex-shrink:0}
 .rt td:first-child,.rt th:first-child{position:sticky;left:0;background:var(--s1);min-width:104px;z-index:1}.rt .c{cursor:pointer;min-width:86px;height:46px}.rt .c:hover{background:var(--s2)}
 .chipx{display:block;background:#E8A02022;color:var(--amber);border-radius:6px;padding:3px 5px;margin-bottom:3px;white-space:nowrap}
 @media(max-width:420px){.nb{font-size:10px}}
+
+.chipx.o{background:#7A7A8033;color:var(--tx2)}.chipx.h{background:#3DB87A22;color:var(--green)}.chipx.s{background:#E0525222;color:var(--red)}

@@ -108,3 +108,34 @@ async function sendReq(type) {
   const b = type === 'DAY_OFF' ? { type, from: $('rf1').value, to: $('rf2').value || $('rf1').value, kind: $('rk').value, note: $('rn2').value.trim() } : { type, rotaId: $('rs1').value, peerId: $('rp1').value, note: $('rn2').value.trim() };
   try { await OWW.api('reqCreate', b); OWW.close(); OWW.toast('Request sent ✓'); await loadReq(); } catch (e) { $('rerr').textContent = e.message; }
 }
+
+// ── punctuality: late / early leave versus the rota ──
+const REASONS = ['Transport', 'Illness', 'Personal', 'Approved by manager', 'Other'];
+let REASON_CB = null;
+function nowT(id) { const d = new Date(); $(id).value = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); durUpdate(); }
+function dev(date, st, en) { // minutes late / left early compared with the planned shift of that day (planned shifts known: today and the next 3 weeks)
+  const p = (A.rota || []).filter(r => (!r.type || r.type === 'SHIFT') && r.date === date); if (!p.length) return null;
+  const a = toM(st); let best = null;
+  p.forEach(r => { const d = ((a - toM(r.start) + 1440 + 720) % 1440) - 720; if (!best || Math.abs(d) < Math.abs(best.d)) best = { r, d }; });
+  const ps = toM(best.r.start), pe = ((toM(best.r.end) - ps + 1440) % 1440) || 1440, ae = ((toM(en) - ps + 1440) % 1440) || 1440;
+  return { ps: best.r.start, pe: best.r.end, late: Math.max(0, best.d), early: Math.max(0, pe - ae) };
+}
+function devText(d) {
+  const g = A.grace ?? 5, o = [];
+  if (d.late > g) o.push('Late arrival: ' + d.late + ' min'); if (d.early > g) o.push('Early leave: ' + d.early + ' min'); if (d.ps) o.push('Planned ' + d.ps + '–' + d.pe);
+  return o.join(' · ');
+}
+function reasonSheet(info, go) {
+  REASON_CB = go;
+  OWW.sheet(`<div><div class="nm" style="font-size:18px">Please tell us why</div><div class="sub" style="margin-top:4px">${esc(info)}</div></div>
+    <select id="rsn">${REASONS.map(r => `<option>${r}</option>`).join('')}</select>
+    <button class="btn p w" onclick="REASON_CB($('rsn').value);OWW.close()">Save shift</button><button class="btn w" onclick="OWW.close()">Cancel</button>`);
+}
+function pTags(x) {
+  const g = A.grace ?? 5;
+  return (x.late > g ? `<span class="tag a">Late ${x.late} min</span>` : '') + (x.early > g ? `<span class="tag a">Left early ${x.early} min</span>` : '') + (x.excused ? '<span class="tag g">Excused</span>' : '');
+}
+function lateN() {
+  const g = A.grace ?? 5, m = OWW.ymd(new Date()).slice(0, 7);
+  return A.shifts.filter(x => x.date.slice(0, 7) === m && x.late > g && !x.excused && x.status !== 'REJECTED').length + ' / ' + (A.limit ?? 3);
+}

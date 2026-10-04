@@ -54,6 +54,9 @@
     'Add fridge': 'Aggiungi frigo', 'Edit fridge': 'Modifica frigo', 'Name': 'Nome', 'Type': 'Tipo', 'Fridge': 'Frigorifero', 'Freezer': 'Congelatore', 'Other': 'Altro', 'Min °C': 'Min °C', 'Max °C': 'Max °C',
     'Active': 'Attivo', 'Inactive': 'Non attivo', 'Edit': 'Modifica', 'Save': 'Salva', 'Start': 'Inizio', 'End': 'Fine', 'No fridges yet. Tap “Add fridge”.': 'Nessun frigo. Tocca “Aggiungi frigo”.',
     // admin rota
+    'Admin login': 'Accesso Admin', 'Kitchen login': 'Accesso Cucina', 'Start = now': 'Inizio = adesso', 'End = now': 'Fine = adesso', 'Late this month': 'Ritardi nel mese', 'Please tell us why': 'Dicci il motivo',
+    'Transport': 'Trasporti', 'Illness': 'Malattia', 'Personal': 'Motivi personali', 'Approved by manager': 'Approvato dal manager', 'Excused': 'Giustificato', 'Excuse': 'Giustifica', 'Undo': 'Annulla', 'Punctuality': 'Puntualità',
+    'Over late limit': 'Oltre il limite ritardi', 'Details': 'Dettagli', 'No late arrivals or early leaves this month': 'Nessun ritardo o uscita anticipata questo mese', '1 more = warning': 'Ancora 1 = avviso', 'Over limit': 'Oltre il limite', 'warned': 'avvisato', 'no email on file': 'nessuna email',
     'Today': 'Oggi', 'Team today': 'Team di oggi', 'On shift now': 'In turno ora', 'Shifts today': 'Turni oggi', 'Temp. out of range': 'Temp. fuori range', 'Open stock alerts': 'Allerte scorte aperte', 'To approve': 'Da approvare',
     'Off today': 'Assenti oggi', 'Now': 'Ora', 'Later': 'Dopo', 'Finished': 'Finito', 'Nobody is planned today': 'Nessuno in turno oggi', 'Deliveries & orders': 'Consegne e ordini', 'Nothing scheduled today': 'Niente in programma oggi',
     'No events this week': 'Nessun evento questa settimana', 'Events this week': 'Eventi della settimana', 'Review hours →': 'Controlla ore →', 'Hours waiting for approval': 'Ore in attesa di approvazione', 'Nothing waiting for approval': 'Niente da approvare',
@@ -78,7 +81,7 @@
     [/^in (\d+) days$/, 'tra $1 giorni'], [/^(\d+) open$/, '$1 aperte'], [/^(\d+) box$/, '$1 cartoni'], [/^(.+) approved$/, '$1 approvate'], [/^saved by (.+)$/, 'salvato da $1'],
     [/^(-?[\d.]+)° to (-?[\d.]+)°C$/, '$1° / $2°C'], [/^Shift saved · (.+) ✓$/, 'Turno salvato · $1 ✓'], [/^(\d+) items updated ✓$/, 'Aggiornati $1 elementi ✓'],
     [/^Approve (\d+) pending shifts in this period\?$/, 'Approvare $1 turni in attesa in questo periodo?'], [/^Not checked yet for: (.+)$/, 'Allergeni non ancora verificati per: $1'],
-    [/^Check the temperature for (.+)$/, 'Controlla la temperatura di $1'], [/^Done: (.+)$/, 'Fatto: $1'], [/^Cover: (.+)$/, 'Sostituzione: $1'], [/^(.+) asks you to cover$/, '$1 ti chiede di sostituirlo/a'], [/^Shelf life: (.+)$/, 'Conservazione: $1'],
+    [/^Check the temperature for (.+)$/, 'Controlla la temperatura di $1'], [/^Done: (.+)$/, 'Fatto: $1'], [/^Late (\d+) min$/, 'Ritardo $1 min'], [/^Left early (\d+) min$/, 'Uscita anticipata $1 min'], [/^Late arrival: (\d+) min$/, 'Ritardo: $1 min'], [/^Early leave: (\d+) min$/, 'Uscita anticipata: $1 min'], [/^Planned (.+)$/, 'Previsto $1'], [/^Actual (.+)$/, 'Effettivo $1'], [/^Late (\d+)×$/, 'Ritardi $1×'], [/^Early leave (\d+)×$/, 'Uscite anticipate $1×'], [/^excused (\d+)$/, 'giustificati $1'], [/^(\d+) min late in total$/, '$1 min di ritardo totale'], [/^Cover: (.+)$/, 'Sostituzione: $1'], [/^(.+) asks you to cover$/, '$1 ti chiede di sostituirlo/a'], [/^Shelf life: (.+)$/, 'Conservazione: $1'],
   ];
   const one = s => { const k = s.trim(); if (D[k] !== undefined) return D[k]; for (const [re, to] of R) if (re.test(k)) return k.replace(re, to); return k; };
   const tr = s => { const k = s.trim(); if (D[k] !== undefined) return D[k]; return k.includes(' · ') ? k.split(' · ').map(one).join(' · ') : one(k); };

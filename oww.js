@@ -18,7 +18,7 @@ OWW.api = async (action, p = {}) => {
   } catch (e) { throw Object.assign(new Error('No connection to the server'), { net: true }); }
   if (!j.ok) {
     if (j.error === 'AUTH') { localStorage.removeItem('oww_s'); location.reload(); }
-    throw new Error(j.error);
+    throw new Error(/^Unknown action/.test(j.error) ? 'The server is not updated yet. In Apps Script: Deploy → Manage deployments → pencil → New version → Deploy' : j.error);
   }
   return j.data;
 };
@@ -61,7 +61,7 @@ OWW.start = cfg => {
   L.innerHTML = `<form id="lf" novalidate><img src="logo.png" alt="Old Wild West" style="width:124px;height:124px;margin:0 auto 2px"><h1>${cfg.title}</h1><p>${cfg.sub}</p><div style="text-align:center">${OWW.langBar ? OWW.langBar() : ''}</div>
     <input id="em" type="email" placeholder="Email" autocomplete="username" autocapitalize="none" required>
     <input id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
-    <div class="err" id="le" role="alert"></div><button class="btn p w" id="lb">Sign in</button></form>`;
+    <div class="err" id="le" role="alert"></div><button class="btn p w" id="lb">Sign in</button>${cfg.other ? `<a class="btn w" href="${cfg.other.href}" style="text-decoration:none">${cfg.other.label}</a>` : ''}</form>`;
   const enter = (tk, user) => {
     if (cfg.allow && !cfg.allow.includes(user.role)) throw new Error('This app is for managers and directors only');
     OWW.tk = tk; OWW.user = user; L.classList.add('hide'); OWW.$('app').classList.remove('hide');
@@ -134,7 +134,7 @@ OWW.push = {
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     const s = document.createElement('script'); s.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js'; s.defer = true; document.head.appendChild(s);
     OneSignalDeferred.push(async OS => {
-      await OS.init({ appId: OWW.PUSH_APP_ID, serviceWorkerPath: 'sw.js', serviceWorkerParam: { scope: location.pathname.replace(/[^/]*$/, '') }, notifyButton: { enable: false } });
+      await OS.init({ appId: OWW.PUSH_APP_ID, serviceWorkerPath: location.pathname.replace(/^\/|[^/]*$/g, '') + 'sw.js', serviceWorkerParam: { scope: location.pathname.replace(/[^/]*$/, '') }, notifyButton: { enable: false } });
       if (OWW.user) OS.login(OWW.user.id); // links this phone to the person, so the server can target them
     });
   },

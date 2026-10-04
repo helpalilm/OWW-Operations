@@ -150,7 +150,7 @@ let D = { inv: [], order: [], alerts: [], users: [] }, filt = 'ALL', del = {};
 document.querySelectorAll('.nb').forEach(b => b.onclick = () => OWW.go(b.dataset.p));
 
 OWW.start({
-  title: 'OWW Admin', sub: 'Managers & directors only', other: { label: 'Kitchen login', href: 'kitchen.html' }, allow: ['Kitchen Manager', 'Director'],
+  title: 'OWW Admin', sub: 'Managers & directors only', switchTo: { label: 'Open Kitchen', href: 'kitchen.html' }, allow: ['Kitchen Manager', 'Director'],
   ready(u) { $('sub').textContent = u.name + ' · ' + u.role; OWW.account('acct'); $('dir').classList.toggle('hide', u.role !== 'Director'); load(); setP('week'); loadEvents(); loadH(); loadToday(); }
 });
 

@@ -22,7 +22,21 @@
   </header>
 
   <main id="main">
-    <section class="page on" id="p-dash">
+    <section class="page on" id="p-today">
+      <div class="sec" id="tdate">Today</div>
+      <div class="stats" id="tstats"></div>
+      <div class="cols">
+        <div><div class="sec">Team today</div><div class="card" id="tteam"></div>
+          <div class="sec">Fridge temperatures</div><div class="card" id="ttemp"></div>
+          <div class="sec">Deliveries &amp; orders</div><div class="card" id="troutine"></div></div>
+        <div><div class="sec">To approve</div><div class="card" id="treq"></div>
+          <div class="sec">Open stock alerts</div><div class="card" id="talerts"></div>
+          <div class="sec">Events this week</div><div class="card" id="tevents"></div></div>
+      </div>
+    </section>
+
+    <section class="page" id="p-dash">
+      <div class="bar"><button class="btn" onclick="OWW.go('p-today')">← Today</button></div>
       <div class="sec" style="display:flex;justify-content:space-between;align-items:center;padding-right:16px">Upcoming events <button class="sm a" onclick="addEvent()">+ Add event</button></div>
       <div id="evlist"></div>
       <div class="sec">Staff attendance</div>
@@ -117,7 +131,7 @@
   </main>
 
   <nav id="nav">
-    <button class="nb on" data-p="p-dash"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>Dashboard</button>
+    <button class="nb on" data-p="p-today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Today<span class="bdg hide" id="tb"></span></button>
     <button class="nb" data-p="p-rota"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Rota</button>
     <button class="nb" data-p="p-haccp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>HACCP<span class="bdg hide" id="hb"></span></button>
     <button class="nb" data-p="p-stock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Stock</button>
@@ -136,7 +150,7 @@ document.querySelectorAll('.nb').forEach(b => b.onclick = () => OWW.go(b.dataset
 
 OWW.start({
   title: 'OWW Admin', sub: 'Managers & directors only', allow: ['Kitchen Manager', 'Director'],
-  ready(u) { $('sub').textContent = u.name + ' · ' + u.role; OWW.account('acct'); $('dir').classList.toggle('hide', u.role !== 'Director'); load(); setP('week'); loadEvents(); loadH(); }
+  ready(u) { $('sub').textContent = u.name + ' · ' + u.role; OWW.account('acct'); $('dir').classList.toggle('hide', u.role !== 'Director'); load(); setP('week'); loadEvents(); loadH(); loadToday(); }
 });
 
 async function load(manual) {
@@ -176,7 +190,7 @@ async function delEvent(id) {
 }
 async function refresh() {
   const b = $('rf'); b.disabled = true; b.textContent = 'Updating…';
-  await Promise.all([load(), loadDash(), loadEvents(), loadH()]); b.disabled = false; b.textContent = '↻ Refresh'; OWW.toast('Updated');
+  await Promise.all([load(), loadDash(), loadEvents(), loadH(), loadToday()]); b.disabled = false; b.textContent = '↻ Refresh'; OWW.toast('Updated');
 }
 
 // ── attendance dashboard ──

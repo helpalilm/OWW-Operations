@@ -247,7 +247,7 @@ function renderToday() {
   const d = TD, t = d.temps, st = { now: ['g', 'Now'], upcoming: ['a', 'Later'], done: ['', 'Finished'] }, none = x => `<div class="empty">${x}</div>`;
   const nowN = d.team.filter(x => x.state === 'now').length, pend = d.requests.length + d.hoursPending;
   $('tdate').textContent = OWW.day(d.date);
-  $('tstats').innerHTML = [['On shift now', nowN, ''], ['Shifts today', d.team.length, ''], ['Temp. out of range', t.bad.length, t.bad.length ? 'var(--red)' : ''], ['Open stock alerts', d.alerts.length, d.alerts.length ? 'var(--amber)' : ''], ['To approve', pend, pend ? 'var(--amber)' : '']]
+  $('tstats').innerHTML = [['On shift now', nowN, ''], ['Shifts today', d.team.length, ''], ['Temp. out of range', t.bad.length, t.bad.length ? 'var(--red)' : ''], ['Open stock alerts', d.alerts.length, d.alerts.length ? 'var(--amber)' : ''], ['To approve', pend, pend ? 'var(--amber)' : ''], ['Over late limit', d.punct ? d.punct.people.filter(p => p.over).length : 0, d.punct && d.punct.people.some(p => p.over) ? 'var(--red)' : '']]
     .map(s => `<div class="stat"><small>${s[0]}</small><b style="color:${s[2] || 'inherit'}">${s[1]}</b></div>`).join('');
   $('tteam').innerHTML = (d.team.length ? d.team.map(x => `<div class="row"><div class="grow"><div class="nm">${esc(x.name)}</div><div class="sub">${esc(x.start)} → ${esc(x.end)}</div></div><span class="tag ${st[x.state][0]}">${st[x.state][1]}</span></div>`).join('') : none('Nobody is planned today'))
     + (d.off.length ? `<div class="row"><div class="grow"><div class="sub">Off today</div><div class="nm" style="font-size:13px">${d.off.map(o => esc(o.name) + ' (' + (ABS[o.type] || [o.type])[0] + ')').join(', ')}</div></div></div>` : '');
@@ -262,4 +262,25 @@ function renderToday() {
     + (!d.requests.length && !d.hoursPending ? none('Nothing waiting for approval') : '');
   $('talerts').innerHTML = d.alerts.length ? d.alerts.slice(0, 8).map(a => `<div class="row"><div class="grow"><div class="nm">${esc(a.item)}</div><div class="sub">${esc(a.qty)} · ${esc(a.by)} · ${esc(a.date)}</div></div></div>`).join('') + `<div class="row"><button class="sm a" onclick="OWW.go('p-order')">Open order list →</button></div>` : none('No open alerts');
   $('tevents').innerHTML = d.events.length ? d.events.map(e => `<div class="row"><div class="grow"><div class="nm">${esc(e.title)}</div><div class="sub">${OWW.day(e.date)}${e.time ? ' · ' + esc(e.time) : ''}${e.notes ? ' · ' + esc(e.notes) : ''}</div></div></div>`).join('') : none('No events this week');
+  renderPunct(d.punct);
 }
+
+// ── punctuality (late arrivals / early leaves), month by month ──
+let PU = null;
+function renderPunct(p) {
+  PU = p || PU; if (!PU) { $('tpunct').innerHTML = ''; return; }
+  const mo = new Date(PU.month + '-01T12:00').toLocaleDateString(OWW.loc(), { month: 'long', year: 'numeric' });
+  $('tpunct').innerHTML = `<div class="row"><button class="sm" onclick="punctGo(-1)" aria-label="Previous month">‹</button><span class="grow nm" style="text-align:center">${mo}</span><button class="sm" onclick="punctGo(1)" aria-label="Next month">›</button></div>` +
+    (PU.people.length ? PU.people.map(x => `<div class="row"><div class="grow"><div class="nm">${esc(x.name)}</div><div class="sub">Late ${x.late}× · Early leave ${x.early}×${x.excused ? ' · excused ' + x.excused : ''}${x.lateMin ? ' · ' + x.lateMin + ' min late in total' : ''}</div></div>
+      ${x.over ? `<span class="tag r">Over limit${x.warned === 'sent' ? ' · warned' : x.warned === 'noemail' ? ' · no email on file' : ''}</span>` : x.late === PU.limit ? '<span class="tag a">1 more = warning</span>' : ''}</div>`).join('')
+      : '<div class="empty">No late arrivals or early leaves this month</div>') +
+    (PU.events.length ? '<div class="row"><div class="sub">Details</div></div>' + PU.events.slice(0, 20).map(e => `<div class="row" style="flex-wrap:wrap"><div class="grow"><div class="nm">${esc(e.name)} · ${OWW.day(e.date)}</div>
+      <div class="sub">Planned ${esc(e.plannedStart)}–${esc(e.plannedEnd)} · Actual ${esc(e.start)}–${esc(e.end)}${e.reason ? ' · ' + esc(e.reason) : ''}${e.memo ? ' · “' + esc(e.memo) + '”' : ''}</div></div>
+      ${e.late > PU.grace ? `<span class="tag a">Late ${e.late} min</span>` : ''}${e.early > PU.grace ? `<span class="tag a">Left early ${e.early} min</span>` : ''}
+      <button class="sm ${e.excused ? '' : 'g'}" onclick="excuse('${esc(e.id)}',${!e.excused})">${e.excused ? 'Undo' : 'Excuse'}</button></div>`).join('') : '');
+}
+async function punctGo(n) {
+  const d = new Date(PU.month + '-01T12:00'); d.setMonth(d.getMonth() + n);
+  try { renderPunct(await OWW.api('punctual', { month: OWW.ymd(d).slice(0, 7) })); } catch (e) { OWW.toast(e.message, 'red'); }
+}
+async function excuse(id, on) { try { await OWW.api('lateExcuse', { id, excused: on }); renderPunct(await OWW.api('punctual', { month: PU.month })); } catch (e) { OWW.toast(e.message, 'red'); } }

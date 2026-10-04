@@ -81,3 +81,5 @@ svg{display:block;flex-shrink:0}
 @media(max-width:420px){.nb{font-size:10px}}
 
 .chipx.o{background:#7A7A8033;color:var(--tx2)}.chipx.h{background:#3DB87A22;color:var(--green)}.chipx.s{background:#E0525222;color:var(--red)}
+
+.swb{display:none}@media(min-width:700px){.swb{display:inline-flex;align-items:center}}

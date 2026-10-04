@@ -54,7 +54,7 @@
     'Add fridge': 'Aggiungi frigo', 'Edit fridge': 'Modifica frigo', 'Name': 'Nome', 'Type': 'Tipo', 'Fridge': 'Frigorifero', 'Freezer': 'Congelatore', 'Other': 'Altro', 'Min °C': 'Min °C', 'Max °C': 'Max °C',
     'Active': 'Attivo', 'Inactive': 'Non attivo', 'Edit': 'Modifica', 'Save': 'Salva', 'Start': 'Inizio', 'End': 'Fine', 'No fridges yet. Tap “Add fridge”.': 'Nessun frigo. Tocca “Aggiungi frigo”.',
     // admin rota
-    'Admin login': 'Accesso Admin', 'Kitchen login': 'Accesso Cucina', 'Start = now': 'Inizio = adesso', 'End = now': 'Fine = adesso', 'Late this month': 'Ritardi nel mese', 'Please tell us why': 'Dicci il motivo',
+    'Open Admin': 'Apri Admin', 'Open Kitchen': 'Apri Cucina', 'Start = now': 'Inizio = adesso', 'End = now': 'Fine = adesso', 'Late this month': 'Ritardi nel mese', 'Please tell us why': 'Dicci il motivo',
     'Transport': 'Trasporti', 'Illness': 'Malattia', 'Personal': 'Motivi personali', 'Approved by manager': 'Approvato dal manager', 'Excused': 'Giustificato', 'Excuse': 'Giustifica', 'Undo': 'Annulla', 'Punctuality': 'Puntualità',
     'Over late limit': 'Oltre il limite ritardi', 'Details': 'Dettagli', 'No late arrivals or early leaves this month': 'Nessun ritardo o uscita anticipata questo mese', '1 more = warning': 'Ancora 1 = avviso', 'Over limit': 'Oltre il limite', 'warned': 'avvisato', 'no email on file': 'nessuna email',
     'Today': 'Oggi', 'Team today': 'Team di oggi', 'On shift now': 'In turno ora', 'Shifts today': 'Turni oggi', 'Temp. out of range': 'Temp. fuori range', 'Open stock alerts': 'Allerte scorte aperte', 'To approve': 'Da approvare',

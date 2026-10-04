@@ -39,7 +39,7 @@
     <section class="page" id="p-rota">
       <div class="sec">Weekly rota</div>
       <div style="display:flex;gap:8px;padding:0 16px 10px;align-items:center"><button class="btn" onclick="wk(-1)" aria-label="Previous week">‹</button><div class="grow nm" id="wlab" style="text-align:center"></div><button class="btn" onclick="wk(1)" aria-label="Next week">›</button></div>
-      <div class="bar" id="rbar"><button class="btn" onclick="copyWeek()">Copy previous week</button></div>
+      <div class="bar" id="rbar"><button class="btn" onclick="copyWeek()">Copy previous week</button><button class="btn p" onclick="OWW.go('p-rimp')">Import timetable</button></div>
       <div class="card" style="overflow-x:auto" id="rtab"></div>
       <div class="note" id="rnote"></div>
     </section>
@@ -52,6 +52,19 @@
         <div><div class="sec">Readings</div><div id="hgrid"></div></div>
         <div><div class="sec" style="display:flex;justify-content:space-between;align-items:center;padding-right:16px">Fridges &amp; freezers <button class="sm a" onclick="fridgeForm()">+ Add fridge</button></div><div class="card" id="hfr"></div></div>
       </div>
+    </section>
+
+    <section class="page" id="p-rimp">
+      <div class="sec">Import weekly timetable</div>
+      <div class="note">Upload the Excel / CSV the director makes (exact), or a photo of the printed timetable. You check everything before it is saved.</div>
+      <div class="card"><div class="row" style="display:grid;gap:10px">
+        <input type="file" id="rfile" accept=".xlsx,.xls,.csv,image/*">
+        <label class="fld"><small>Week starts on Monday</small><input type="date" id="rwk"></label>
+        <div class="sub" id="rhint"></div>
+        <button class="btn p w" id="rscan" onclick="rimpRead()">Read file</button>
+        <button class="btn w" onclick="OWW.go('p-rota')">Back to rota</button>
+        <div class="sub" id="rprog"></div></div></div>
+      <div id="rrev"></div>
     </section>
 
     <section class="page" id="p-stock">

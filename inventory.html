@@ -82,9 +82,15 @@
       <div id="rrev"></div>
     </section>
 
+    <section class="page" id="p-count">
+      <div class="bar"><button class="btn" onclick="OWW.go('p-stock')">← Stock</button></div>
+      <div class="sec">Count by shelf walk</div>
+      <div id="cn-body"></div>
+    </section>
+
     <section class="page" id="p-stock">
       <div class="stats" id="stats"></div>
-      <div class="bar"><button class="btn" onclick="OWW.go('p-imp')">Import count from photo / PDF / CSV</button></div>
+      <div class="bar"><button class="btn" onclick="OWW.go('p-imp')">Import count from photo / PDF / CSV</button><button class="btn p" onclick="OWW.go('p-count')">Count by shelf walk</button></div>
       <div class="find"><input id="sq" placeholder="Search stock…" autocomplete="off"></div>
       <div class="chips" id="flt"></div>
       <div class="note" id="stockhint"></div>
@@ -403,5 +409,6 @@ function dlSheet() {
 }
 </script>
 <script src="admin-x.js"></script>
+<script src="count-x.js"></script>
 </body>
 </html>

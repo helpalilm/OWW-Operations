@@ -285,3 +285,8 @@ async function punctGo(n) {
   try { renderPunct(await OWW.api('punctual', { month: OWW.ymd(d).slice(0, 7) })); } catch (e) { OWW.toast(e.message, 'red'); }
 }
 async function excuse(id, on) { try { await OWW.api('lateExcuse', { id, excused: on }); renderPunct(await OWW.api('punctual', { month: PU.month })); } catch (e) { OWW.toast(e.message, 'red'); } }
+
+// ── weekly summary email (Director) ──
+async function sendSummary(which) {
+  try { const r = await OWW.api('summarySend', { which }); OWW.toast('Summary sent to ' + r.to + ' ✓'); } catch (e) { OWW.toast(e.message, 'red'); }
+}

@@ -2,7 +2,12 @@
 let CN = null, CV = {}, CI = 0, CKEY = '', CD = new Set(), CSYNC = false;
 OWW.hooks['p-count'] = () => cnOpen();
 const fmtN = v => String(v).replace('.', ',');
-async function cnOpen() { try { CN = await OWW.api('countData'); } catch (e) { return OWW.toast(e.message, 'red'); } cnInit(); cnRender(); }
+async function cnOpen() {
+  $('cn-body').innerHTML = '<div class="empty">Loading…</div>';
+  try { CN = await OWW.api('countData'); }
+  catch (e) { $('cn-body').innerHTML = `<div class="card" style="padding:16px;display:grid;gap:10px"><div class="nm" style="color:var(--red)">Could not load the count</div><div class="sub">${esc(e.message)}</div><button class="btn p w" onclick="cnOpen()">Try again</button></div>`; return; }
+  cnInit(); cnRender();
+}
 function cnInit() {
   CKEY = CN.session ? 'oww_cnt_' + CN.session.id : ''; CV = Object.assign({}, CN.draft); CD = new Set(); CI = 0;
   if (CKEY) try { const l = JSON.parse(localStorage.getItem(CKEY) || '{}'); Object.keys(l).forEach(k => { if (l[k] !== CV[k]) { CV[k] = l[k]; CD.add(k); } }); } catch (e) {} // this phone's newer values win and are synced

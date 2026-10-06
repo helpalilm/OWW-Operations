@@ -91,7 +91,7 @@
     <section class="page" id="p-stock">
       <div class="stats" id="stats"></div>
       <div class="bar"><button class="btn" onclick="OWW.go('p-imp')">Import count from photo / PDF / CSV</button><button class="btn p" onclick="OWW.go('p-count')">Count by shelf walk</button></div>
-      <div class="find"><input id="sq" placeholder="Search stock…" autocomplete="off"></div>
+      <div class="find"><input id="sq" name="oww-find" placeholder="Search stock…" autocomplete="off" data-lpignore="true" data-1p-ignore></div>
       <div class="chips" id="flt"></div>
       <div class="note" id="stockhint"></div>
       <div class="card" id="stocklist"></div>
@@ -130,6 +130,9 @@
     <section class="page" id="p-set">
       <div id="acct"></div>
       <div id="dir" class="hide">
+        <div class="sec">Weekly summary email</div>
+        <div class="card"><div class="row" style="display:grid;gap:10px"><div class="sub">Sent automatically every Monday morning to the director: hours, punctuality, temperatures, stock, deliveries and alerts. You can also send it now.</div>
+          <div class="two"><button class="btn" onclick="sendSummary('last')">Email me last week</button><button class="btn" onclick="sendSummary('this')">Email me this week so far</button></div></div></div>
         <div class="sec">Users</div>
         <div class="card" id="users"></div>
         <div class="bar"><button class="btn p" onclick="addUser()">Add user</button></div>

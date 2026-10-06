@@ -59,15 +59,16 @@ OWW.logout = () => { localStorage.removeItem('oww_s'); location.reload(); };
 OWW.start = cfg => {
   OWW.switchCfg = cfg.switchTo; // where the Director can jump to (set per app)
   const L = OWW.$('login');
-  L.innerHTML = `<form id="lf" novalidate><img src="logo.png" alt="Old Wild West" style="width:124px;height:124px;margin:0 auto 2px"><h1>${cfg.title}</h1><p>${cfg.sub}</p><div style="text-align:center">${OWW.langBar ? OWW.langBar() : ''}</div>
+  const formHtml = `<form id="lf" novalidate><img src="logo.png" alt="Old Wild West" style="width:124px;height:124px;margin:0 auto 2px"><h1>${cfg.title}</h1><p>${cfg.sub}</p><div style="text-align:center">${OWW.langBar ? OWW.langBar() : ''}</div>
     <input id="em" type="email" placeholder="Email" autocomplete="username" autocapitalize="none" required>
     <input id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
     <div class="err" id="le" role="alert"></div><button class="btn p w" id="lb">Sign in</button></form>`;
   const enter = (tk, user) => {
     if (cfg.allow && !cfg.allow.includes(user.role)) throw new Error('This app is for managers and directors only');
-    OWW.tk = tk; OWW.user = user; L.classList.add('hide'); OWW.$('app').classList.remove('hide');
+    OWW.tk = tk; OWW.user = user; L.classList.add('hide'); L.innerHTML = ''; OWW.$('app').classList.remove('hide');
     localStorage.setItem('oww_s', JSON.stringify({ tk, user })); cfg.ready(user); OWW.flush(); OWW.push.init(); OWW.addSwitch();
   };
+  const build = () => { L.innerHTML = formHtml;
   OWW.$('em').value = localStorage.getItem('oww_email') || '';
   OWW.$('lf').onsubmit = async e => {
     e.preventDefault(); const b = OWW.$('lb'), er = OWW.$('le'); er.textContent = ''; b.disabled = true; b.textContent = 'Signing in…';
@@ -76,10 +77,11 @@ OWW.start = cfg => {
       localStorage.setItem('oww_email', em); enter(r.token, r.user);
     } catch (x) { er.textContent = x.message; b.disabled = false; b.textContent = 'Sign in'; OWW.$('pw').value = ''; }
   };
+  };
   // restore a still-valid session (12h) so people are not asked every time
   const s = JSON.parse(localStorage.getItem('oww_s') || 'null');
   if (s) { OWW.tk = s.tk; const go = () => { try { enter(s.tk, s.user); OWW.api('me').catch(() => {}); } catch (x) { OWW.logout(); } }; // runs after the whole page has loaded
-    document.readyState === 'loading' ? addEventListener('DOMContentLoaded', go) : go(); } // opens instantly; an expired session returns to login
+    document.readyState === 'loading' ? addEventListener('DOMContentLoaded', go) : go(); } else build(); // opens instantly; an expired session returns to login
 };
 
 // settings card: who you are, change password, sign out
@@ -87,10 +89,11 @@ OWW.account = el => {
   const u = OWW.user;
   OWW.$(el).innerHTML = `<div class="sec">Account</div><div class="cols"><div class="card">
     <div class="row"><div class="grow"><div class="nm">${OWW.esc(u.full)}</div><div class="sub">${OWW.esc(u.email)} · ${OWW.esc(u.role)} · ${OWW.esc(u.branch)}</div></div></div>
-    <div class="row" style="display:grid;gap:8px"><div class="nm">Change password</div>
-      <input id="pc" type="password" placeholder="Current password" autocomplete="current-password">
-      <input id="pn" type="password" placeholder="New password (8+ characters)" autocomplete="new-password">
-      <button class="btn p" onclick="OWW.changePw()">Save password</button></div>
+    <form class="row" style="display:grid;gap:8px" onsubmit="OWW.changePw();return false"><div class="nm">Change password</div>
+      <input type="text" name="username" autocomplete="username" value="${OWW.esc(u.email)}" readonly tabindex="-1" aria-hidden="true" style="position:absolute;opacity:0;height:0;width:0;padding:0;border:0;pointer-events:none">
+      <input id="pc" name="oww-current" type="password" placeholder="Current password" autocomplete="current-password">
+      <input id="pn" name="oww-new" type="password" placeholder="New password (8+ characters)" autocomplete="new-password">
+      <button class="btn p" type="submit">Save password</button></form>
     <div class="row"><span class="grow">Language / Lingua</span>${OWW.langBar ? OWW.langBar() : ''}</div>
     ${OWW.PUSH_APP_ID ? '<div class="row"><button class="btn w" onclick="OWW.push.enable()">🔔 Turn on phone notifications</button></div>' : ''}
     ${OWW.switchCfg && u.role === 'Director' ? `<div class="row"><button class="btn w" onclick="OWW.goApp()"><span aria-hidden="true">⇄ </span>${OWW.esc(OWW.switchCfg.label)}</button></div>` : ''}

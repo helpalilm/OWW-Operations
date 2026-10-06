@@ -25,7 +25,7 @@
   <main id="main">
     <section class="page on" id="p-prep">
       <div id="evk"></div>
-      <div class="find"><input id="q" placeholder="Search prep item…" autocomplete="off" spellcheck="false"><div class="pop hide" id="qp"></div></div>
+      <div class="find"><input id="q" name="oww-find" placeholder="Search prep item…" autocomplete="off" spellcheck="false" data-lpignore="true" data-1p-ignore><div class="pop hide" id="qp"></div></div>
       <div class="sec">Suggested for this shift</div>
       <div class="chips" id="sugg"></div>
       <div class="cols">
@@ -40,7 +40,7 @@
       <div class="cols">
         <div><div class="sec">Message preview</div><div class="wa" id="wa"></div></div>
         <div><div class="sec">To do next shift</div>
-          <div class="find"><input id="tq" placeholder="Add an item to Da Fare…" autocomplete="off"><div class="pop hide" id="tp"></div></div>
+          <div class="find"><input id="tq" name="oww-find2" placeholder="Add an item to Da Fare…" autocomplete="off" data-lpignore="true" data-1p-ignore><div class="pop hide" id="tp"></div></div>
           <div class="card" id="todo"></div></div>
       </div>
       <div class="bar"><button class="btn" onclick="OWW.go('p-prep')">Back</button><button class="btn g" onclick="sendWA()">Copy &amp; open WhatsApp</button></div>
@@ -49,7 +49,7 @@
     <section class="page" id="p-alerts">
       <div class="sec">Flag a low-stock item</div>
       <div class="note">Search any raw ingredient or consumable and say how much is left. The manager gets it and handles the order.</div>
-      <div class="find"><input id="aq" placeholder="Search ingredient or consumable…" autocomplete="off"><div class="pop hide" id="ap"></div></div>
+      <div class="find"><input id="aq" name="oww-find3" placeholder="Search ingredient or consumable…" autocomplete="off" data-lpignore="true" data-1p-ignore><div class="pop hide" id="ap"></div></div>
       <div class="sec">Your flags this week</div>
       <div class="note">Resets every Friday after delivery.</div>
       <div id="mine"></div>
@@ -190,12 +190,12 @@ async function sendWA() {
 
 // ── alerts ──
 const stockItems = () => [
-  ...(D.raw || []).map(r => ({ id: r.id, name: r.it, m: r.it + ' ' + (r.en || ''), unit: r.unit || '', loc: r.loc || '', kind: 'Ingredient' })),
-  ...D.cons.map(c => ({ id: c['Consumable ID'], name: c['Name (IT)'], m: c['Name (IT)'], unit: c['Unit'] || '', loc: c['Storage'] || '', kind: 'Consumable' }))
+  ...(D.raw || []).map(r => ({ id: r.id, name: r.it, m: r.it + ' ' + (r.en || ''), unit: r.unit || '', loc: r.loc || '', life: r.life || '', kind: 'Ingredient' })),
+  ...D.cons.map(c => ({ id: c['Consumable ID'], name: c['Name (IT)'], m: c['Name (IT)'], unit: c['Unit'] || '', loc: c['Storage'] || '', life: c['TMC / Shelf Life'] || '', kind: 'Consumable' }))
 ].filter(x => x.id && x.name);
-OWW.finder('aq', 'ap', () => stockItems().map(x => ({ k: x.id, l: x.name, m: x.m, t: x.loc, s: x.kind + (x.unit ? ' · ' + x.unit : '') })), id => {
+OWW.finder('aq', 'ap', () => stockItems().map(x => ({ k: x.id, l: x.name, m: x.m, t: x.life, s: x.kind + (x.unit ? ' · ' + x.unit : '') })), id => {
   const c = stockItems().find(x => x.id === id);
-  OWW.sheet(`<div><div class="nm" style="font-size:18px">${esc(c.name)}</div><div class="sub">${esc(c.kind)}${c.loc ? ' · Shelf: ' + esc(c.loc) : ''}</div></div>
+  OWW.sheet(`<div><div class="nm" style="font-size:18px">${esc(c.name)}</div><div class="sub">${esc(c.kind)}${c.life ? ' · Shelf life: ' + esc(c.life) : ''}${c.loc ? ' · Shelf: ' + esc(c.loc) : ''}</div></div>
     <input id="fq" placeholder="How much is left? e.g. 2 bottiglie"><input id="fn" placeholder="Note (optional)">
     <button class="btn p w" onclick="flag('${esc(id)}')">Send alert to manager</button><button class="btn w" onclick="OWW.close()">Cancel</button>`);
 });

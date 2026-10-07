@@ -123,7 +123,7 @@ OWW.finder = (inp, pop, items, pick) => {
     const q = i.value.trim().toLowerCase(); if (!q) { p.classList.add('hide'); return; }
     const nz = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''), qs = nz(q).split(/\s+/);
     const r = items().filter(x => { const h = nz(x.m || x.l); return qs.every(w => h.includes(w)); }).slice(0, 8);
-    p.innerHTML = r.length ? r.map(x => `<div data-k="${OWW.esc(x.k)}"><span style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="nm">${OWW.esc(x.l)}</span>${x.t ? `<span class="tag a">${OWW.esc(x.t)}</span>` : ''}</span><span class="sub">${OWW.esc(x.s || '')}</span></div>`).join('') : '<div class="sub">No match</div>';
+    p.innerHTML = r.length ? r.map(x => `<div data-k="${OWW.esc(x.k)}"><span style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="nm">${OWW.esc(x.l)}</span><span style="display:flex;gap:6px;flex-shrink:0">${[].concat(x.t || []).filter(Boolean).map((t, i) => `<span class="tag ${i ? 'b' : 'a'}">${OWW.esc(t)}</span>`).join('')}</span></span><span class="sub">${OWW.esc(x.s || '')}</span></div>`).join('') : '<div class="sub">No match</div>';
     p.classList.remove('hide');
   };
   p.onclick = e => { const d = e.target.closest('[data-k]'); if (!d) return; p.classList.add('hide'); i.value = ''; pick(d.dataset.k); };
@@ -158,5 +158,5 @@ OWW.addSwitch = () => {
   const u = OWW.user, c = OWW.switchCfg, rf = OWW.$('rf');
   if (!c || !u || u.role !== 'Director' || !rf || OWW.$('swb')) return;
   const b = document.createElement('button'); b.id = 'swb'; b.className = 'sm a swb';
-  b.innerHTML = '<span aria-hidden="true">⇄ </span>' + OWW.esc(c.label); b.onclick = OWW.goApp; rf.before(b);
+  b.setAttribute('aria-label', c.label); b.title = c.label; b.innerHTML = '<span aria-hidden="true">⇄</span><span class="lbl"> ' + OWW.esc(c.label) + '</span>'; b.onclick = OWW.goApp; rf.before(b);
 };

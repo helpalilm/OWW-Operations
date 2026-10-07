@@ -17,7 +17,7 @@ svg{display:block;flex-shrink:0}
 .err{color:var(--red);font-size:13px;min-height:18px}
 
 /* shell: mobile = top / page / bottom nav ; laptop = side rail */
-#app{display:grid;grid-template-columns:minmax(0,1fr);height:100vh;height:100dvh;grid-template-rows:auto 1fr auto;grid-template-areas:"top" "main" "nav"}
+#app{display:grid;grid-template-columns:minmax(0,1fr);position:fixed;top:0;right:0;bottom:0;left:0;grid-template-rows:auto 1fr auto;grid-template-areas:"top" "main" "nav"}
 #top{grid-area:top;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top,0px));background:var(--s0);border-bottom:1px solid var(--bd)}
 #top b{font-size:17px;letter-spacing:-.3px;display:block}#top small{color:var(--tx2);font-size:12px}
 #main{grid-area:main;overflow-y:auto;overscroll-behavior:contain}

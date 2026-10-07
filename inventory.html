@@ -200,7 +200,7 @@ async function delEvent(id) {
 }
 async function refresh() {
   const b = $('rf'); b.disabled = true; b.textContent = 'Updating…';
-  await Promise.all([load(), loadDash(), loadEvents(), loadH(), loadToday()]); b.disabled = false; b.textContent = '↻ Refresh'; OWW.toast('Updated');
+  try { await Promise.all([load(), loadDash(), loadEvents(), loadH(), loadToday()]); OWW.toast('Updated'); } finally { b.disabled = false; b.textContent = '↻ Refresh'; }
 }
 
 // ── attendance dashboard ──

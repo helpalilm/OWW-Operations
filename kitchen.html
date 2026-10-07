@@ -193,7 +193,7 @@ const stockItems = () => [
   ...(D.raw || []).map(r => ({ id: r.id, name: r.it, m: r.it + ' ' + (r.en || ''), unit: r.unit || '', loc: r.loc || '', life: r.life || '', kind: 'Ingredient' })),
   ...D.cons.map(c => ({ id: c['Consumable ID'], name: c['Name (IT)'], m: c['Name (IT)'], unit: c['Unit'] || '', loc: c['Storage'] || '', life: c['TMC / Shelf Life'] || '', kind: 'Consumable' }))
 ].filter(x => x.id && x.name);
-OWW.finder('aq', 'ap', () => stockItems().map(x => ({ k: x.id, l: x.name, m: x.m, t: x.life, s: x.kind + (x.unit ? ' · ' + x.unit : '') })), id => {
+OWW.finder('aq', 'ap', () => stockItems().map(x => ({ k: x.id, l: x.name, m: x.m, t: [x.life, x.loc], s: x.kind + (x.unit ? ' · ' + x.unit : '') })), id => {
   const c = stockItems().find(x => x.id === id);
   OWW.sheet(`<div><div class="nm" style="font-size:18px">${esc(c.name)}</div><div class="sub">${esc(c.kind)}${c.life ? ' · Shelf life: ' + esc(c.life) : ''}${c.loc ? ' · Shelf: ' + esc(c.loc) : ''}</div></div>
     <input id="fq" placeholder="How much is left? e.g. 2 bottiglie"><input id="fn" placeholder="Note (optional)">

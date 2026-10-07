@@ -17,7 +17,7 @@ svg{display:block;flex-shrink:0}
 .err{color:var(--red);font-size:13px;min-height:18px}
 
 /* shell: mobile = top / page / bottom nav ; laptop = side rail */
-#app{display:grid;height:100dvh;grid-template-rows:auto 1fr auto;grid-template-areas:"top" "main" "nav"}
+#app{display:grid;grid-template-columns:minmax(0,1fr);height:100vh;height:100dvh;grid-template-rows:auto 1fr auto;grid-template-areas:"top" "main" "nav"}
 #top{grid-area:top;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top,0px));background:var(--s0);border-bottom:1px solid var(--bd)}
 #top b{font-size:17px;letter-spacing:-.3px;display:block}#top small{color:var(--tx2);font-size:12px}
 #main{grid-area:main;overflow-y:auto;overscroll-behavior:contain}
@@ -27,7 +27,7 @@ svg{display:block;flex-shrink:0}
 .nb.on{color:var(--amber)}.nb svg{width:22px;height:22px}
 .bdg{position:absolute;top:2px;left:calc(50% + 6px);background:var(--red);color:#fff;font-size:9px;font-weight:700;border-radius:10px;padding:1px 5px}
 @media(min-width:900px){
- #app{grid-template-columns:230px 1fr;grid-template-rows:auto 1fr;grid-template-areas:"nav top" "nav main"}
+ #app{grid-template-columns:230px minmax(0,1fr);grid-template-rows:auto 1fr;grid-template-areas:"nav top" "nav main"}
  #nav{flex-direction:column;justify-content:flex-start;gap:4px;padding:16px 10px;border-top:0;border-right:1px solid var(--bd)}
  .nb{flex:none;flex-direction:row;gap:12px;padding:12px 14px;border-radius:var(--r);font-size:14px}.nb.on{background:var(--s2)}
  .bdg{position:static;margin-left:auto}#top{padding:14px 28px}.page{padding:20px 28px 40px}}
@@ -82,4 +82,16 @@ svg{display:block;flex-shrink:0}
 
 .chipx.o{background:#7A7A8033;color:var(--tx2)}.chipx.h{background:#3DB87A22;color:var(--green)}.chipx.s{background:#E0525222;color:var(--red)}
 
-.swb{display:none}@media(min-width:700px){.swb{display:inline-flex;align-items:center}}
+.swb{display:inline-flex;align-items:center;gap:2px;font-size:15px;padding:5px 10px}.swb .lbl{display:none;font-size:12px}@media(min-width:700px){.swb .lbl{display:inline}}
+
+/* header never grows wider than the screen: title and subtitle shorten with "…" instead of wrapping */
+#top{flex-wrap:nowrap}.brand{flex:1 1 auto}.brand>div{min-width:0}
+.brand b,.brand small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#top>:not(.brand){flex-shrink:0}
+@media(max-width:420px){
+  #top{padding-left:12px;padding-right:12px;gap:8px}
+  .brand{gap:8px}.brand img{width:30px;height:30px}
+  #top b{font-size:15px}#top small{font-size:11px}
+  #top .seg button{padding:6px 10px;font-size:12px}
+  #top .sm{padding:5px 8px}.swb{padding:5px 8px}
+}

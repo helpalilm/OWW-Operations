@@ -11,11 +11,13 @@ const OWW = {
 
 OWW.api = async (action, p = {}) => {
   let j;
+  const ac = new AbortController(), tm = setTimeout(() => ac.abort(), 45000); // give up after 45 s instead of waiting forever
   try {
     // text/plain body = no CORS preflight, which Apps Script cannot answer
-    const r = await fetch(OWW.URL, { method: 'POST', redirect: 'follow', body: JSON.stringify({ ...p, action, token: OWW.tk }) });
+    const r = await fetch(OWW.URL, { method: 'POST', redirect: 'follow', signal: ac.signal, body: JSON.stringify({ ...p, action, token: OWW.tk }) });
     j = await r.json();
-  } catch (e) { throw Object.assign(new Error('No connection to the server'), { net: true }); }
+  } catch (e) { throw Object.assign(new Error(e.name === 'AbortError' ? 'The server took too long. Please try again.' : 'No connection to the server'), { net: true }); }
+  finally { clearTimeout(tm); }
   if (!j.ok) {
     if (j.error === 'AUTH') { localStorage.removeItem('oww_s'); location.reload(); }
     throw new Error(/^Unknown action/.test(j.error) ? 'The server is not updated yet. In Apps Script: Deploy → Manage deployments → pencil → New version → Deploy' : j.error);

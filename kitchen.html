@@ -281,7 +281,7 @@ function renderAtt() {
 }
 async function refresh() {
   const b = $('rf'); b.disabled = true; b.textContent = '…';
-  await Promise.all([load(), loadAtt(), loadX()]); b.disabled = false; b.textContent = '↻'; OWW.toast('Updated');
+  try { await Promise.all([load(), loadAtt(), loadX()]); OWW.toast('Updated'); } finally { b.disabled = false; b.textContent = '↻'; }
 }
 
 function renderAll() { renderPrep(); renderMsg(); renderAlerts(); }

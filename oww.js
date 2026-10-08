@@ -3,6 +3,8 @@ const OWW = {
   // Paste your Apps Script Web App URL here (the one ending in /exec). It is the only place it lives.
   URL: 'https://script.google.com/macros/s/AKfycbzLCnRPV3gfH_sKgSXn_t_PDshZ3-Yiu5gH3t87jNuJVHuS6HmxQ6BrQ3ZMujES8ZWy/exec',
   tk: null, user: null, hooks: {},
+  // Storage keys. Each app may set its own (the Sala app does), so a login or offline queue of one app never reaches another app's server.
+  SK: 'oww_s', QK: 'oww_q',
   // Phone notifications (OneSignal, free plan). Paste your OneSignal App ID here to switch them on; leave empty = off.
   PUSH_APP_ID: '',
   $: id => document.getElementById(id),
@@ -19,7 +21,7 @@ OWW.api = async (action, p = {}) => {
   } catch (e) { throw Object.assign(new Error(e.name === 'AbortError' ? 'The server took too long. Please try again.' : 'No connection to the server'), { net: true }); }
   finally { clearTimeout(tm); }
   if (!j.ok) {
-    if (j.error === 'AUTH') { localStorage.removeItem('oww_s'); location.reload(); }
+    if (j.error === 'AUTH') { localStorage.removeItem(OWW.SK); location.reload(); }
     throw new Error(/^Unknown action/.test(j.error) ? 'The server is not updated yet. In Apps Script: Deploy → Manage deployments → pencil → New version → Deploy' : j.error);
   }
   return j.data;
@@ -35,15 +37,15 @@ OWW.send = async (action, p) => {
   try { return await OWW.api(action, p); }
   catch (e) {
     if (!e.net) throw e;
-    const q = JSON.parse(localStorage.getItem('oww_q') || '[]'); q.push({ action, p });
-    localStorage.setItem('oww_q', JSON.stringify(q)); OWW.toast('Offline — saved, will sync', 'amber');
+    const q = JSON.parse(localStorage.getItem(OWW.QK) || '[]'); q.push({ action, p });
+    localStorage.setItem(OWW.QK, JSON.stringify(q)); OWW.toast('Offline — saved, will sync', 'amber');
   }
 };
 OWW.flush = async () => {
-  const q = JSON.parse(localStorage.getItem('oww_q') || '[]'); if (!q.length || !OWW.tk) return;
+  const q = JSON.parse(localStorage.getItem(OWW.QK) || '[]'); if (!q.length || !OWW.tk) return;
   const left = [];
   for (const i of q) { try { await OWW.api(i.action, i.p); } catch (e) { if (e.net) left.push(i); } }
-  localStorage.setItem('oww_q', JSON.stringify(left));
+  localStorage.setItem(OWW.QK, JSON.stringify(left));
   if (left.length < q.length) OWW.toast('Synced ' + (q.length - left.length) + ' saved action(s)');
 };
 addEventListener('online', OWW.flush);
@@ -55,7 +57,7 @@ OWW.go = id => {
   if (OWW.hooks[id]) OWW.hooks[id]();
 };
 
-OWW.logout = () => { localStorage.removeItem('oww_s'); location.reload(); };
+OWW.logout = () => { localStorage.removeItem(OWW.SK); location.reload(); };
 
 // cfg: { title, sub, allow:[roles], ready(user) }
 OWW.start = cfg => {
@@ -66,9 +68,9 @@ OWW.start = cfg => {
     <input id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
     <div class="err" id="le" role="alert"></div><button class="btn p w" id="lb">Sign in</button></form>`;
   const enter = (tk, user) => {
-    if (cfg.allow && !cfg.allow.includes(user.role)) throw new Error('This app is for managers and directors only');
+    if (cfg.allow && !cfg.allow.includes(user.role)) throw new Error(cfg.deny || 'This app is for managers and directors only');
     OWW.tk = tk; OWW.user = user; L.classList.add('hide'); L.innerHTML = ''; OWW.$('app').classList.remove('hide');
-    localStorage.setItem('oww_s', JSON.stringify({ tk, user })); cfg.ready(user); OWW.flush(); OWW.push.init(); OWW.addSwitch();
+    localStorage.setItem(OWW.SK, JSON.stringify({ tk, user })); cfg.ready(user); OWW.flush(); OWW.push.init(); OWW.addSwitch();
   };
   const build = () => { L.innerHTML = formHtml;
   OWW.$('em').value = localStorage.getItem('oww_email') || '';
@@ -81,7 +83,7 @@ OWW.start = cfg => {
   };
   };
   // restore a still-valid session (12h) so people are not asked every time
-  const s = JSON.parse(localStorage.getItem('oww_s') || 'null');
+  const s = JSON.parse(localStorage.getItem(OWW.SK) || 'null');
   if (s) { OWW.tk = s.tk; const go = () => { try { enter(s.tk, s.user); OWW.api('me').catch(() => {}); } catch (x) { OWW.logout(); } }; // runs after the whole page has loaded
     document.readyState === 'loading' ? addEventListener('DOMContentLoaded', go) : go(); } else build(); // opens instantly; an expired session returns to login
 };

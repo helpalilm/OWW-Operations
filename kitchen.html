@@ -111,7 +111,7 @@ document.querySelectorAll('#shiftseg button').forEach(b => b.onclick = () => { s
 function paintShift() { document.querySelectorAll('#shiftseg button').forEach(b => b.classList.toggle('on', b.dataset.s === shift)); }
 
 OWW.start({
-  title: 'OWW Kitchen', sub: 'Sign in with your work email', switchTo: { label: 'Open Admin', href: 'inventory.html' },
+  title: 'OWW Kitchen', sub: 'Sign in with your work email', switchTo: { label: 'Open Admin', href: 'inventory.html' }, allow: ['Staff', 'Kitchen Manager', 'Director', 'Owner'], deny: 'This app is for the kitchen team. Waiters use the Sala app.',
   ready(u) {
     $('sub').textContent = new Date().toLocaleDateString(OWW.loc(), { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' + u.name;
     paintShift(); OWW.account('acct'); $('ad').value = OWW.ymd(new Date());

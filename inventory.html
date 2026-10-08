@@ -120,7 +120,10 @@
     </section>
 
     <section class="page" id="p-del">
-      <div class="sec">Confirm delivery</div>
+      <div class="sec">Friday delivery note (PDF)</div>
+      <div class="note">Upload the HAVI delivery note. The FOOD lines are added to the kitchen stock; drinks, paper, cleaning and uniform lines belong to the Sala app. You check everything before it is saved.</div>
+      <div id="ddt"></div>
+      <div class="sec">Or confirm by hand</div>
       <div class="note">Enter the boxes actually received. Stock is added automatically and staff alerts reset.</div>
       <div class="card" id="dellist"></div>
       <div class="find"><select id="deladd"></select></div>
@@ -153,6 +156,7 @@
 <div id="sheet"><div id="sheetc"></div></div>
 <script src="oww.js"></script>
 <script src="i18n.js"></script>
+<script src="ddt.js"></script>
 <script>
 const $ = OWW.$, esc = OWW.esc;
 let D = { inv: [], order: [], alerts: [], users: [] }, filt = 'ALL', del = {};
@@ -275,6 +279,7 @@ function renderAlerts() {
 }
 async function resolve(id, how) { try { await OWW.api('resolveAlert', { alertId: id, how }); await load(); } catch (e) { OWW.toast(e.message, 'red'); } }
 
+OWW.hooks['p-del'] = () => { if (!window.__ddt) { window.__ddt = 1; DDT.mount('ddt', { area: 'KITCHEN', after: load }); } };
 // ── delivery ──
 function resetDel() { del = {}; D.order.forEach(i => del[i.rawId] = { name: i.name, ordered: i.boxes, got: i.boxes, box: i.box, unit: i.unit }); }
 function renderDel() {
@@ -305,7 +310,7 @@ async function setActive(id, active) { try { await OWW.api('setUserStatus', { us
 function addUser() {
   OWW.sheet(`<div class="nm" style="font-size:18px">Add user</div>
     <input id="nf" placeholder="First name"><input id="nl" placeholder="Last name"><input id="ne" type="email" placeholder="Email" autocapitalize="none">
-    <select id="nr"><option>Staff</option><option>Kitchen Manager</option><option>Director</option></select>
+    <select id="nr"><option>Staff</option><option>Kitchen Manager</option><option>Cameriere</option><option>Sala Manager</option><option>Director</option></select>
     <input id="np" type="text" placeholder="Temporary password (8+ characters)"><div class="err" id="ner"></div>
     <button class="btn p w" onclick="saveUser()">Create user</button><button class="btn w" onclick="OWW.close()">Cancel</button>`);
 }
